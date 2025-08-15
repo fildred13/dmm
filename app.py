@@ -3,32 +3,50 @@ Main Flask Application
 Refactored to use modular media processor components
 """
 
+import logging
 import os
 import tempfile
 from flask import Flask, render_template, request, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
 
-from media_processor.config import MAX_CONTENT_LENGTH, DEFAULT_REGISTRY_FILE
+from media_processor.config import MAX_CONTENT_LENGTH, get_last_registry_path, save_last_registry_path
 from media_processor.registry import MediaRegistry
 from media_processor.media_processor import MediaProcessor
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.secret_key = 'your-secret-key-here'  # Required for sessions
 
-# Initialize components with default registry
-current_registry_path = DEFAULT_REGISTRY_FILE
-registry = MediaRegistry(current_registry_path)
-media_processor = MediaProcessor(current_registry_path)
+# Global state management
+class AppState:
+    """Manages global application state"""
+    def __init__(self):
+        # Use persistent registry path on startup
+        initial_registry_path = get_last_registry_path()
+        self.current_registry_path = initial_registry_path
+        self.registry = MediaRegistry(initial_registry_path)
+        self.media_processor = MediaProcessor(initial_registry_path)
+        logger.info(f"Initialized with registry: {initial_registry_path}")
+    
+    def update_registry(self, registry_path: str):
+        """Update the registry and media processor to use a new registry path"""
+        self.current_registry_path = registry_path
+        self.registry = MediaRegistry(registry_path)
+        self.media_processor = MediaProcessor(registry_path)
+        logger.info(f"Updated registry to: {registry_path}")
+        
+        # Save the registry path for persistence
+        if save_last_registry_path(registry_path):
+            logger.info(f"Saved registry path for persistence: {registry_path}")
+        else:
+            logger.warning(f"Failed to save registry path for persistence: {registry_path}")
 
-
-def update_components(registry_path: str):
-    """Update the registry and media processor to use a new registry path"""
-    global registry, media_processor, current_registry_path
-    current_registry_path = registry_path
-    registry = MediaRegistry(registry_path)
-    media_processor = MediaProcessor(registry_path)
+# Initialize global state
+app_state = AppState()
 
 
 @app.route('/')
@@ -46,7 +64,7 @@ def upload_page():
 @app.route('/preview')
 def preview_page():
     """Preview page"""
-    media_count = registry.get_media_count()
+    media_count = app_state.registry.get_media_count()
     return render_template('preview.html', media_count=media_count)
 
 
@@ -54,11 +72,11 @@ def preview_page():
 def get_current_registry():
     """Get information about the current registry"""
     return jsonify({
-        'path': registry.get_registry_path(),
-        'directory': registry.get_registry_directory(),
-        'name': registry.get_registry_name(),
-        'display_name': registry.get_display_name(),
-        'media_count': registry.get_media_count()
+        'path': app_state.registry.get_registry_path(),
+        'directory': app_state.registry.get_registry_directory(),
+        'name': app_state.registry.get_registry_name(),
+        'display_name': app_state.registry.get_display_name(),
+        'media_count': app_state.registry.get_media_count()
     })
 
 
@@ -77,22 +95,23 @@ def switch_registry():
     
     try:
         # Update components to use the new registry
-        update_components(registry_path)
+        app_state.update_registry(registry_path)
         
-        # Store in session for persistence
+        # Store in session for persistence within browser session
         session['current_registry'] = registry_path
         
         return jsonify({
             'success': True,
             'registry_info': {
-                'path': registry.get_registry_path(),
-                'directory': registry.get_registry_directory(),
-                'name': registry.get_registry_name(),
-                'display_name': registry.get_display_name(),
-                'media_count': registry.get_media_count()
+                'path': app_state.registry.get_registry_path(),
+                'directory': app_state.registry.get_registry_directory(),
+                'name': app_state.registry.get_registry_name(),
+                'display_name': app_state.registry.get_display_name(),
+                'media_count': app_state.registry.get_media_count()
             }
         })
     except Exception as e:
+        logger.error(f"Failed to switch registry: {e}")
         return jsonify({'error': f'Failed to switch registry: {str(e)}'}), 500
 
 
@@ -112,10 +131,10 @@ def upload_file():
     
     try:
         # Calculate hash of uploaded file for duplicate detection
-        file_hash = media_processor.get_file_hash(temp_path)
+        file_hash = app_state.media_processor.get_file_hash(temp_path)
         
         # Check for duplicates
-        duplicate_entry = registry.find_duplicate_by_hash(file_hash)
+        duplicate_entry = app_state.registry.find_duplicate_by_hash(file_hash)
         
         if duplicate_entry:
             # This is a duplicate file - skip processing entirely
@@ -124,27 +143,33 @@ def upload_file():
                 'is_duplicate': True,
                 'duplicate_info': {
                     'path': duplicate_entry['path'],
-                    'index': registry.get_all_media().index(duplicate_entry)
+                    'index': app_state.registry.get_all_media().index(duplicate_entry)
                 },
                 'message': f'Duplicate file detected: {file.filename}'
             }), 409  # 409 Conflict
         
         # Process the file (pass registry for filename collision handling)
-        relative_path, error = media_processor.process_media_file(temp_path, registry)
+        relative_path, error = app_state.media_processor.process_media_file(temp_path, app_state.registry)
         
         if error:
+            logger.error(f"Failed to process file {file.filename}: {error}")
             return jsonify({'error': error}), 400
         
         # Add to registry with hash
-        if registry.add_media(relative_path, file_hash):
+        if app_state.registry.add_media(relative_path, file_hash):
+            logger.info(f"Successfully processed and added to registry: {file.filename}")
             return jsonify({
                 'success': True,
                 'path': relative_path,
                 'message': f'Successfully processed {file.filename}'
             })
         else:
+            logger.error(f"Failed to save {file.filename} to registry")
             return jsonify({'error': 'Failed to save to registry'}), 500
         
+    except Exception as e:
+        logger.error(f"Unexpected error processing {file.filename}: {e}")
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
     finally:
         # Clean up temp file
         if os.path.exists(temp_path):
@@ -154,22 +179,23 @@ def upload_file():
 @app.route('/api/media')
 def get_media_list():
     """Get list of all media files"""
-    return jsonify(registry.get_all_media())
+    return jsonify(app_state.registry.get_all_media())
 
 
 @app.route('/api/media/<int:index>')
 def get_media_info(index):
     """Get info about a specific media file by index"""
-    media_info = registry.get_media_by_index(index)
+    media_info = app_state.registry.get_media_by_index(index)
     if media_info:
         # Get additional file information including dimensions
-        file_path = os.path.join(media_processor.upload_folder, media_info['path'].split('/')[-1])
+        file_path = os.path.join(app_state.media_processor.upload_folder, media_info['path'].split('/')[-1])
         if os.path.exists(file_path):
             try:
-                file_info = media_processor.get_processing_info(file_path)
+                file_info = app_state.media_processor.get_processing_info(file_path)
                 # Merge the registry info with file info
                 media_info.update(file_info)
             except Exception as e:
+                logger.warning(f"Could not get file info for index {index}: {e}")
                 # If we can't get file info, just continue with basic info
                 pass
         return jsonify(media_info)
@@ -179,35 +205,38 @@ def get_media_info(index):
 @app.route('/api/media/<int:index>', methods=['DELETE'])
 def delete_media(index):
     """Delete a media file by index"""
-    media_info = registry.get_media_by_index(index)
+    media_info = app_state.registry.get_media_by_index(index)
     if not media_info:
         return jsonify({'error': 'Index out of range'}), 404
     
     try:
         # Remove the file from the media directory
-        file_path = os.path.join(media_processor.upload_folder, media_info['path'].split('/')[-1])
+        file_path = os.path.join(app_state.media_processor.upload_folder, media_info['path'].split('/')[-1])
         if os.path.exists(file_path):
             os.remove(file_path)
+            logger.info(f"Deleted media file: {file_path}")
         
         # Remove from registry
-        if registry.remove_media_by_index(index):
+        if app_state.registry.remove_media_by_index(index):
             return jsonify({'success': True, 'message': 'Media deleted successfully'})
         else:
+            logger.error(f"Failed to remove media at index {index} from registry")
             return jsonify({'error': 'Failed to remove from registry'}), 500
     except Exception as e:
+        logger.error(f"Failed to delete media at index {index}: {e}")
         return jsonify({'error': f'Failed to delete media: {str(e)}'}), 500
 
 
 @app.route('/api/media/count')
 def get_media_count():
     """Get the total number of media files"""
-    return jsonify({'count': registry.get_media_count()})
+    return jsonify({'count': app_state.registry.get_media_count()})
 
 
 @app.route('/media/<path:filename>')
 def serve_media(filename):
     """Serve media files from the current registry's media directory"""
-    return send_from_directory(media_processor.upload_folder, filename)
+    return send_from_directory(app_state.media_processor.upload_folder, filename)
 
 
 # Initialize with session registry if available
@@ -215,9 +244,11 @@ def initialize_registry():
     """Initialize the registry from session if available"""
     try:
         if 'current_registry' in session:
-            update_components(session['current_registry'])
+            app_state.update_registry(session['current_registry'])
+            logger.info(f"Initialized registry from session: {session['current_registry']}")
     except RuntimeError:
         # Session not available (e.g., during testing or module import)
+        logger.debug("Session not available during initialization")
         pass
 
 # Call initialization function

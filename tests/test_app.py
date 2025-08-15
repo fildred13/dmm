@@ -14,42 +14,49 @@ from media_processor.registry import MediaRegistry
 
 @pytest.fixture
 def client(temp_dir):
-    """Create a test client for the Flask app with isolated test environment"""
-    # Create temporary media directory
-    test_media_dir = os.path.join(temp_dir, "test_media")
-    os.makedirs(test_media_dir, exist_ok=True)
-    
-    # Create temporary registry file
+    """Create a test client with isolated test environment"""
+    # Create test registry file
     test_registry_file = os.path.join(temp_dir, "test_registry.json")
+    test_data = []
     with open(test_registry_file, 'w') as f:
-        json.dump([], f)
+        json.dump(test_data, f)
     
-    # Configure app for testing
-    app.config['TESTING'] = True
-    
-    # Temporarily patch the global registry and media processor to use test files
+    # Temporarily patch the global app_state to use test files
     from media_processor.registry import MediaRegistry
     from media_processor.media_processor import MediaProcessor
     import app as app_module
     
-    # Store original instances
-    original_registry = app_module.registry
-    original_media_processor = app_module.media_processor
+    # Store original app_state
+    original_app_state = app_module.app_state
     
     # Create test instances
     test_registry = MediaRegistry(test_registry_file)
     test_media_processor = MediaProcessor(test_registry_file)
     
-    # Patch the global instances
-    app_module.registry = test_registry
-    app_module.media_processor = test_media_processor
+    # Create new app_state with test instances
+    class TestAppState:
+        def __init__(self):
+            self.current_registry_path = test_registry_file
+            self.registry = test_registry
+            self.media_processor = test_media_processor
+        
+        def update_registry(self, registry_path: str):
+            self.current_registry_path = registry_path
+            self.registry = MediaRegistry(registry_path)
+            self.media_processor = MediaProcessor(registry_path)
     
-    with app.test_client() as client:
-        yield client
+    # Patch the global app_state
+    app_module.app_state = TestAppState()
     
-    # Restore original instances
-    app_module.registry = original_registry
-    app_module.media_processor = original_media_processor
+    # Mock the config functions to prevent any real config file access
+    with patch('media_processor.config.get_last_registry_path', return_value=test_registry_file), \
+         patch('media_processor.config.save_last_registry_path', return_value=True):
+        
+        with app.test_client() as client:
+            yield client
+    
+    # Restore original app_state
+    app_module.app_state = original_app_state
 
 
 @pytest.fixture
@@ -110,7 +117,7 @@ class TestAppRoutes:
         
         # Reload the registry to pick up the new data
         import app as app_module
-        app_module.registry.load()
+        app_module.app_state.registry.load()
         
         response = client.get('/api/media/0')
         assert response.status_code == 200
@@ -198,14 +205,15 @@ class TestAppRoutes:
     def test_delete_media_api_success(self, client, temp_dir):
         """Test successful media deletion"""
         # Create a test file in the test media directory
-        test_media_dir = os.path.join(temp_dir, "test_media")
+        test_media_dir = os.path.join(temp_dir, "media")
+        os.makedirs(test_media_dir, exist_ok=True)
         test_file = os.path.join(test_media_dir, "test_delete.jpg")
         with open(test_file, 'w') as f:
             f.write("test content")
         
         # Add to registry (the client fixture already sets up a test registry)
         import app as app_module
-        app_module.registry.add_media("test_delete.jpg")
+        app_module.app_state.registry.add_media("test_delete.jpg")
         
         # Test deletion
         response = client.delete('/api/media/0')

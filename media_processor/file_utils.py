@@ -4,10 +4,14 @@ Handles file type detection, path operations, and file validation
 """
 
 import hashlib
+import logging
 from pathlib import Path
 from typing import Optional, Tuple
 from PIL import Image
 from .config import SUPPORTED_INPUT_FORMATS, SUPPORTED_OUTPUT_FORMATS
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 class FileUtils:
@@ -20,7 +24,8 @@ class FileUtils:
             with Image.open(file_path) as img:
                 # Check if the image has multiple frames
                 return hasattr(img, 'n_frames') and img.n_frames > 1
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error checking if GIF is animated: {e}")
             return False
     
     @staticmethod
@@ -30,7 +35,8 @@ class FileUtils:
             with Image.open(file_path) as img:
                 # Use PIL's built-in is_animated property
                 return img.is_animated
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error checking if WebP is animated: {e}")
             return False
     
     @staticmethod
@@ -111,7 +117,7 @@ class FileUtils:
                     hash_md5.update(chunk)
             return hash_md5.hexdigest()
         except Exception as e:
-            print(f"Error calculating hash for {file_path}: {e}")
+            logger.error(f"Error calculating hash for {file_path}: {e}")
             return ""
     
     @staticmethod

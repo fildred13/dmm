@@ -4,9 +4,13 @@ Handles loading, saving, and managing the media registry JSON file
 """
 
 import json
+import logging
 import os
 from typing import List, Dict, Any, Optional
 from .config import DEFAULT_REGISTRY_FILE
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 class MediaRegistry:
@@ -41,7 +45,7 @@ class MediaRegistry:
                 with open(self.registry_file, 'r') as f:
                     return json.load(f)
             except (json.JSONDecodeError, IOError) as e:
-                print(f"Error loading registry: {e}")
+                logger.error(f"Error loading registry: {e}")
                 return []
         return []
     
@@ -54,7 +58,7 @@ class MediaRegistry:
                 json.dump(registry, f, indent=2)
             return True
         except IOError as e:
-            print(f"Error saving registry: {e}")
+            logger.error(f"Error saving registry: {e}")
             return False
     
     def add_media(self, media_path: str, original_hash: str = None) -> bool:
