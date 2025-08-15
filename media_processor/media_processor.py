@@ -3,10 +3,11 @@ Main Media Processor
 Orchestrates the media processing workflow
 """
 
+import logging
 import os
-from pathlib import Path
-from typing import Tuple, Optional
-from .config import ensure_media_folder_exists
+from typing import Optional, Tuple
+from config import ensure_media_folder_exists, DEFAULT_REGISTRY_FILE
+from .registry import MediaRegistry
 from .file_utils import FileUtils
 from .image_processor import ImageProcessor
 from .video_processor import VideoProcessor
@@ -23,7 +24,6 @@ class MediaProcessor:
             registry_path: Path to the registry file. If None, uses default.
         """
         if registry_path is None:
-            from .config import DEFAULT_REGISTRY_FILE
             registry_path = DEFAULT_REGISTRY_FILE
         
         self.registry_path = registry_path
@@ -43,7 +43,7 @@ class MediaProcessor:
             If successful: (relative_path, None)
             If failed: (None, error_message)
         """
-        filename = Path(file_path).name
+        filename = os.path.basename(file_path)
         file_type = FileUtils.get_file_type(filename, file_path)
         
         if not file_type:
@@ -86,7 +86,7 @@ class MediaProcessor:
     
     def get_processing_info(self, file_path: str) -> dict:
         """Get information about a file before processing"""
-        filename = Path(file_path).name
+        filename = os.path.basename(file_path)
         file_type = FileUtils.get_file_type(filename, file_path)
         
         if not file_type:
@@ -95,7 +95,7 @@ class MediaProcessor:
         info = {
             'filename': filename,
             'file_type': file_type,
-            'original_size': FileUtils.format_file_size(Path(file_path).stat().st_size)
+            'original_size': FileUtils.format_file_size(os.path.getsize(file_path))
         }
         
         if file_type == 'image':

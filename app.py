@@ -6,12 +6,13 @@ Refactored to use modular media processor components
 import logging
 import os
 import tempfile
-from flask import Flask, render_template, request, jsonify, send_from_directory, session
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect
 from werkzeug.utils import secure_filename
 
-from media_processor.config import MAX_CONTENT_LENGTH, get_last_registry_path, save_last_registry_path
+from config import MAX_CONTENT_LENGTH, get_last_registry_path, save_last_registry_path
 from media_processor.registry import MediaRegistry
 from media_processor.media_processor import MediaProcessor
+from tagging.tag_registry import TagRegistry
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class AppState:
         self.current_registry_path = initial_registry_path
         self.registry = MediaRegistry(initial_registry_path)
         self.media_processor = MediaProcessor(initial_registry_path)
+        self.tag_registry = TagRegistry(initial_registry_path)
         logger.info(f"Initialized with registry: {initial_registry_path}")
     
     def update_registry(self, registry_path: str):
@@ -37,6 +39,7 @@ class AppState:
         self.current_registry_path = registry_path
         self.registry = MediaRegistry(registry_path)
         self.media_processor = MediaProcessor(registry_path)
+        self.tag_registry = TagRegistry(registry_path)
         logger.info(f"Updated registry to: {registry_path}")
         
         # Save the registry path for persistence
@@ -51,8 +54,8 @@ app_state = AppState()
 
 @app.route('/')
 def index():
-    """Main page with navigation"""
-    return render_template('index.html')
+    """Redirect root to upload page"""
+    return redirect('/upload')
 
 
 @app.route('/upload')
@@ -66,6 +69,24 @@ def preview_page():
     """Preview page"""
     media_count = app_state.registry.get_media_count()
     return render_template('preview.html', media_count=media_count)
+
+
+@app.route('/tag-manager')
+def tag_manager_page():
+    """Tag Manager page"""
+    return render_template('tag_manager.html')
+
+
+@app.route('/tag-by-image')
+def tag_by_image_page():
+    """Tag By Image page"""
+    return render_template('tag_by_image.html')
+
+
+@app.route('/tag-by-tag')
+def tag_by_tag_page():
+    """Tag By Tag page"""
+    return render_template('tag_by_tag.html')
 
 
 @app.route('/api/registry/current')

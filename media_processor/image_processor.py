@@ -1,25 +1,26 @@
 """
-Image Processing
-Handles image resizing, format conversion, and optimization
+Image Processing Module
+Handles image resizing and format conversion
 """
 
 import logging
 from pathlib import Path
-from PIL import Image
 from typing import Tuple
-from .config import calculate_dimensions, JPEG_QUALITY
+from PIL import Image
+from .config import JPEG_QUALITY
+from .file_utils import FileUtils
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
 class ImageProcessor:
-    """Handles image processing operations"""
+    """Image processing operations"""
     
     @staticmethod
     def calculate_dimensions(width: int, height: int) -> Tuple[int, int]:
-        """Calculate new dimensions while maintaining aspect ratio"""
-        return calculate_dimensions(width, height, ensure_even=False)
+        """Calculate new dimensions for image processing"""
+        return FileUtils.calculate_dimensions(width, height, ensure_even=False)
     
     @staticmethod
     def resize_image(image_path: str, output_path: str) -> bool:

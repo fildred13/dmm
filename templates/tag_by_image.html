@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Tag By Image - Media Management Tool{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Tag By Image</h1>
+        <p>Tag media files by viewing and selecting images.</p>
+    </div>
+    
+    <div class="content-section">
+        <div class="placeholder-content">
+            <h2>🚧 Tag By Image - Coming Soon</h2>
+            <p>This page will allow you to:</p>
+            <ul>
+                <li>Browse through your media files visually</li>
+                <li>View images and videos in a gallery format</li>
+                <li>Select multiple files for batch tagging</li>
+                <li>Apply tags to individual or multiple files</li>
+                <li>See existing tags on files</li>
+                <li>Quick tag suggestions based on content</li>
+            </ul>
+            <p><strong>Note:</strong> This interface will provide an intuitive way to tag your media by seeing what you're tagging.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    color: white;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.content-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.placeholder-content {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.placeholder-content h2 {
+    color: #667eea;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+}
+
+.placeholder-content p {
+    margin-bottom: 1rem;
+    color: #555;
+    line-height: 1.6;
+}
+
+.placeholder-content ul {
+    text-align: left;
+    max-width: 500px;
+    margin: 1.5rem auto;
+    color: #555;
+}
+
+.placeholder-content li {
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+.placeholder-content strong {
+    color: #667eea;
+}
+</style>
+{% endblock %}

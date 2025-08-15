@@ -32,15 +32,8 @@
             max-width: 1200px;
             margin: 0 auto;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-        }
-
-        .nav-brand {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
-            text-decoration: none;
         }
 
         .nav-menu {
@@ -341,10 +334,12 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <a href="/" class="nav-brand">Media Manager</a>
             <ul class="nav-menu">
                 <li><a href="/upload" class="{% if request.endpoint == 'upload_page' %}active{% endif %}">Upload</a></li>
                 <li><a href="/preview" class="{% if request.endpoint == 'preview_page' %}active{% endif %}">Preview</a></li>
+                <li><a href="/tag-manager" class="{% if request.endpoint == 'tag_manager_page' %}active{% endif %}">Tag Manager</a></li>
+                <li><a href="/tag-by-image" class="{% if request.endpoint == 'tag_by_image_page' %}active{% endif %}">Tag By Image</a></li>
+                <li><a href="/tag-by-tag" class="{% if request.endpoint == 'tag_by_tag_page' %}active{% endif %}">Tag By Tag</a></li>
                 <li class="registry-selector">
                     <div class="registry-info">
                         <div class="registry-name" id="registry-name">Loading...</div>

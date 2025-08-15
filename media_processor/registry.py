@@ -7,7 +7,7 @@ import json
 import logging
 import os
 from typing import List, Dict, Any, Optional
-from .config import DEFAULT_REGISTRY_FILE
+from config import DEFAULT_REGISTRY_FILE
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -52,8 +52,10 @@ class MediaRegistry:
     def save(self, registry: List[Dict[str, Any]]) -> bool:
         """Save the media registry to JSON file"""
         try:
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(self.registry_file), exist_ok=True)
+            # Ensure the directory exists (only if there is a directory path)
+            registry_dir = os.path.dirname(self.registry_file)
+            if registry_dir:  # Only create directory if there's a path component
+                os.makedirs(registry_dir, exist_ok=True)
             with open(self.registry_file, 'w') as f:
                 json.dump(registry, f, indent=2)
             return True

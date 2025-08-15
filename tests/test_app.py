@@ -49,8 +49,8 @@ def client(temp_dir):
     app_module.app_state = TestAppState()
     
     # Mock the config functions to prevent any real config file access
-    with patch('media_processor.config.get_last_registry_path', return_value=test_registry_file), \
-         patch('media_processor.config.save_last_registry_path', return_value=True):
+    with patch('config.get_last_registry_path', return_value=test_registry_file), \
+         patch('config.save_last_registry_path', return_value=True):
         
         with app.test_client() as client:
             yield client
@@ -79,10 +79,10 @@ class TestAppRoutes:
     """Test Flask application routes"""
     
     def test_index_route(self, client):
-        """Test index route"""
+        """Test index route redirects to upload"""
         response = client.get('/')
-        assert response.status_code == 200
-        assert b'Media Management Tool' in response.data
+        assert response.status_code == 302  # Redirect status code
+        assert response.location == '/upload'
     
     def test_upload_route(self, client):
         """Test upload route"""

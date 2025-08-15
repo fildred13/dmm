@@ -135,11 +135,57 @@ class FileUtils:
     def format_file_size(size_bytes: int) -> str:
         """Format file size in human-readable format"""
         if size_bytes == 0:
-            return "0 Bytes"
+            return "0 B"
         
-        size_names = ["Bytes", "KB", "MB", "GB"]
-        import math
-        i = int(math.floor(math.log(size_bytes, 1024)))
-        p = math.pow(1024, i)
-        s = round(size_bytes / p, 2)
-        return f"{s} {size_names[i]}"
+        size_names = ["B", "KB", "MB", "GB"]
+        i = 0
+        while size_bytes >= 1024 and i < len(size_names) - 1:
+            size_bytes /= 1024.0
+            i += 1
+        
+        return f"{size_bytes:.1f} {size_names[i]}"
+    
+    @staticmethod
+    def calculate_dimensions(width: int, height: int, ensure_even: bool = False) -> Tuple[int, int]:
+        """
+        Calculate new dimensions while maintaining aspect ratio.
+        
+        Args:
+            width: Original width
+            height: Original height
+            ensure_even: Whether to ensure dimensions are even (for video codecs)
+        
+        Returns:
+            Tuple of (new_width, new_height)
+        """
+        from .config import LANDSCAPE_TARGET_WIDTH, PORTRAIT_TARGET_HEIGHT, SQUARE_TARGET_SIZE
+        
+        # Handle edge cases where dimensions might be 0 or invalid
+        if width <= 0 or height <= 0:
+            # Default to square dimensions if we can't determine aspect ratio
+            new_width = new_height = SQUARE_TARGET_SIZE
+        else:
+            aspect_ratio = width / height
+            
+            # Landscape media: scale to width = 1024, height calculated proportionally
+            # Portrait media: scale to height = 576, width calculated proportionally
+            # Square media: scale to width = height = 576
+            if aspect_ratio > 1.0:
+                # Landscape - scale to width = 1024
+                new_width = LANDSCAPE_TARGET_WIDTH
+                new_height = int(new_width / aspect_ratio)
+            elif aspect_ratio < 1.0:
+                # Portrait - scale to height = 576
+                new_height = PORTRAIT_TARGET_HEIGHT
+                new_width = int(new_height * aspect_ratio)
+            else:
+                # Square - scale to 576x576
+                new_width = SQUARE_TARGET_SIZE
+                new_height = SQUARE_TARGET_SIZE
+        
+        # Ensure dimensions are even (required for some video codecs)
+        if ensure_even:
+            new_width = new_width - (new_width % 2)
+            new_height = new_height - (new_height % 2)
+        
+        return new_width, new_height

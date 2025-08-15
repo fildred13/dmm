@@ -1,13 +1,16 @@
 """
-Video Processing
-Handles video resizing, format conversion, and optimization
+Video Processing Module
+Handles video resizing and format conversion
 """
 
 import logging
+import subprocess
 from pathlib import Path
 import ffmpeg
-from typing import Tuple
-from .config import calculate_dimensions, VIDEO_CRF_MP4, VIDEO_CRF_WEBM
+from typing import Tuple, Optional, Dict, Any
+from .config import VIDEO_CRF_MP4, VIDEO_CRF_WEBM
+from .file_utils import FileUtils
+
 try:
     from wand.image import Image as WandImage
     WAND_AVAILABLE = True
@@ -19,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 
 class VideoProcessor:
-    """Handles video processing operations"""
+    """Video processing operations"""
     
     @staticmethod
     def calculate_dimensions(width: int, height: int) -> Tuple[int, int]:
-        """Calculate new dimensions while maintaining aspect ratio"""
-        return calculate_dimensions(width, height, ensure_even=True)
+        """Calculate new dimensions for video processing (ensures even numbers)"""
+        return FileUtils.calculate_dimensions(width, height, ensure_even=True)
     
     @staticmethod
     def convert_webp_to_webm(webp_path: str, output_path: str) -> bool:

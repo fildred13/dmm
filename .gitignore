@@ -2,6 +2,7 @@ media/
 media_registry.json
 *.code-workspace
 .dmm_config.json
+tag_registry.json
 
 
 # Byte-compiled / optimized / DLL files

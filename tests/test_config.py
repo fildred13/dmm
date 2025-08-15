@@ -1,5 +1,5 @@
 """
-Tests for configuration settings
+Tests for configuration module
 """
 
 import pytest
@@ -7,12 +7,23 @@ import json
 import os
 import tempfile
 from unittest.mock import patch, mock_open
-from media_processor.config import (
-    SUPPORTED_INPUT_FORMATS, SUPPORTED_OUTPUT_FORMATS,
-    LANDSCAPE_TARGET_WIDTH, PORTRAIT_TARGET_HEIGHT, SQUARE_TARGET_SIZE,
-    calculate_dimensions, get_media_folder_from_registry, ensure_media_folder_exists,
-    get_last_registry_path, save_last_registry_path, CONFIG_FILE, DEFAULT_REGISTRY_FILE
+from config import (
+    get_last_registry_path,
+    save_last_registry_path,
+    get_media_folder_from_registry,
+    get_tag_registry_path,
+    ensure_media_folder_exists,
+    DEFAULT_REGISTRY_FILE,
+    CONFIG_FILE
 )
+from media_processor.config import (
+    SUPPORTED_INPUT_FORMATS,
+    SUPPORTED_OUTPUT_FORMATS,
+    LANDSCAPE_TARGET_WIDTH,
+    PORTRAIT_TARGET_HEIGHT,
+    SQUARE_TARGET_SIZE
+)
+from media_processor.file_utils import FileUtils
 
 
 class TestConfig:
@@ -44,35 +55,35 @@ class TestCalculateDimensions:
     
     def test_calculate_dimensions_landscape(self):
         """Test landscape dimension calculation"""
-        width, height = calculate_dimensions(2000, 1000)
+        width, height = FileUtils.calculate_dimensions(2000, 1000)
         assert width == LANDSCAPE_TARGET_WIDTH  # 1024
         assert height == 512  # 1024 / 2
     
     def test_calculate_dimensions_portrait(self):
         """Test portrait dimension calculation"""
-        width, height = calculate_dimensions(1000, 2000)
+        width, height = FileUtils.calculate_dimensions(1000, 2000)
         assert height == PORTRAIT_TARGET_HEIGHT  # 576
         assert width == 288  # 576 / 2
     
     def test_calculate_dimensions_square(self):
         """Test square dimension calculation"""
-        width, height = calculate_dimensions(1000, 1000)
+        width, height = FileUtils.calculate_dimensions(1000, 1000)
         assert width == SQUARE_TARGET_SIZE  # 576
         assert height == SQUARE_TARGET_SIZE  # 576
     
     def test_calculate_dimensions_with_even_ensurance(self):
         """Test dimension calculation with even number enforcement"""
-        width, height = calculate_dimensions(1001, 1001)
+        width, height = FileUtils.calculate_dimensions(1001, 1001)
         assert width % 2 == 0
         assert height % 2 == 0
     
     def test_calculate_dimensions_invalid_input(self):
         """Test dimension calculation with invalid input"""
-        width, height = calculate_dimensions(0, 0)
+        width, height = FileUtils.calculate_dimensions(0, 0)
         assert width == SQUARE_TARGET_SIZE
         assert height == SQUARE_TARGET_SIZE
         
-        width, height = calculate_dimensions(-100, 100)
+        width, height = FileUtils.calculate_dimensions(-100, 100)
         assert width == SQUARE_TARGET_SIZE
         assert height == SQUARE_TARGET_SIZE
 
@@ -88,6 +99,14 @@ class TestMediaFolderFunctions:
         expected_folder = os.path.normpath("/path/to/media")
         actual_folder = os.path.normpath(media_folder)
         assert actual_folder == expected_folder
+    
+    def test_get_tag_registry_path(self):
+        """Test getting tag registry path from media registry path"""
+        media_registry_path = "/path/to/media_registry.json"
+        tag_registry_path = get_tag_registry_path(media_registry_path)
+        expected_path = os.path.normpath("/path/to/tag_registry.json")
+        actual_path = os.path.normpath(tag_registry_path)
+        assert actual_path == expected_path
     
     def test_ensure_media_folder_exists(self, temp_dir):
         """Test ensuring media folder exists"""

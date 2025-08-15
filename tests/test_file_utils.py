@@ -211,10 +211,12 @@ class TestFileUtils:
     
     def test_format_file_size(self):
         """Test file size formatting"""
-        assert FileUtils.format_file_size(0) == "0 Bytes"
+        assert FileUtils.format_file_size(0) == "0 B"
         assert FileUtils.format_file_size(1024) == "1.0 KB"
         assert FileUtils.format_file_size(1024 * 1024) == "1.0 MB"
         assert FileUtils.format_file_size(1024 * 1024 * 1024) == "1.0 GB"
+        assert FileUtils.format_file_size(1500) == "1.5 KB"
+        assert FileUtils.format_file_size(1536) == "1.5 KB"
     
     def test_calculate_file_hash(self, temp_dir):
         """Test file hash calculation"""

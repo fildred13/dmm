@@ -9,22 +9,30 @@ The project has been refactored into a modular architecture for better maintaina
 ```
 dmm/
 ├── app.py                      # Main Flask application
+├── config.py                   # Global application configuration
 ├── requirements.txt            # Python dependencies
 ├── media_registry.json         # Media registry (auto-generated)
+├── tag_registry.json           # Tag registry (auto-generated)
+├── .dmm_config.json           # App configuration (auto-generated)
 ├── media/                      # Processed media files (auto-generated)
 ├── templates/                  # HTML templates
 │   ├── base.html              # Base template with navigation
-│   ├── index.html             # Home page
 │   ├── upload.html            # Upload interface
-│   └── preview.html           # Preview interface
-├── media_processor/            # Core processing modules
+│   ├── preview.html           # Preview interface
+│   ├── tag_manager.html       # Tag management interface
+│   ├── tag_by_image.html      # Tag by image interface
+│   └── tag_by_tag.html        # Tag by tag interface
+├── media_processor/            # Core media processing modules
 │   ├── __init__.py            # Package initialization
-│   ├── config.py              # Configuration settings
+│   ├── config.py              # Media processing configuration
 │   ├── registry.py            # Media registry management
 │   ├── file_utils.py          # File utilities and validation
 │   ├── image_processor.py     # Image processing operations
 │   ├── video_processor.py     # Video processing operations
 │   └── media_processor.py     # Main processing orchestrator
+├── tagging/                    # Tagging system modules
+│   ├── __init__.py            # Package initialization
+│   └── tag_registry.py        # Tag registry management
 └── README.md                  # This file
 ```
 
@@ -39,6 +47,66 @@ dmm/
 - **Delete Functionality**: Delete media files with confirmation dialog
 - **Chronological Ordering**: Media files ordered by upload time (most recent first)
 - **Duplicate Detection**: Hash-based duplicate detection with visual indicators and quick access to existing files
+- **Tagging System**: Comprehensive tagging system for organizing and categorizing media files
+
+## 🏷️ **Tagging System**
+
+The tool includes a powerful tagging system for organizing your media files:
+
+### **Tag Registry Structure**
+Every `media_registry.json` automatically gets a corresponding `tag_registry.json` file in the same directory:
+
+```json
+{
+  "tags": {
+    "character": {
+      "description": "Character-related content",
+      "category": "content_type"
+    }
+  },
+  "media_tags": {
+    "media/character_sprite.png": ["character", "sprite", "player"]
+  },
+  "tag_categories": {
+    "content_type": {
+      "description": "Type of content",
+      "color": "#ff0000"
+    }
+  },
+  "version": "1.0"
+}
+```
+
+### **Tagging Interfaces**
+
+1. **Tag Manager** (`/tag-manager`)
+   - View all tags in the active registry
+   - Create and manage tag categories
+   - Add, edit, and delete tags
+   - See tag usage statistics
+   - Organize your tagging system
+
+2. **Tag By Image** (`/tag-by-image`)
+   - Browse through media files visually
+   - View images and videos in gallery format
+   - Select multiple files for batch tagging
+   - Apply tags to individual or multiple files
+   - See existing tags on files
+   - Quick tag suggestions based on content
+
+3. **Tag By Tag** (`/tag-by-tag`)
+   - Browse and select tags from your tag library
+   - Find media files that need specific tags
+   - Apply tags to multiple files at once
+   - See which files are missing certain tags
+   - Filter and search media by tag criteria
+   - Manage tag relationships and hierarchies
+
+### **Automatic Tag Registry Creation**
+- Tag registry files are automatically created when you first use tagging features
+- Each registry maintains its own tag data independently
+- Tag data persists across app sessions
+- Tag registry files are excluded from version control for privacy
 
 ## 🎨 **User Interface**
 
@@ -96,10 +164,18 @@ The tool includes intelligent duplicate detection to prevent accidental re-uploa
 
 ### **Core Modules:**
 
-1. **`config.py`** - Centralized configuration
+#### **Global Configuration (`config.py`):**
+1. **`config.py`** - Global application configuration
+   - Flask settings (MAX_CONTENT_LENGTH)
+   - Registry persistence (get_last_registry_path, save_last_registry_path)
+   - Path utilities (get_media_folder_from_registry, get_tag_registry_path)
+   - App configuration file management
+
+#### **Media Processing (`media_processor/`):**
+1. **`config.py`** - Media processing configuration
    - File format definitions
-   - Processing parameters
-   - Directory settings
+   - Processing parameters (dimensions, quality)
+   - Dimension calculation algorithms
 
 2. **`registry.py`** - Media registry management
    - JSON file operations
@@ -125,6 +201,13 @@ The tool includes intelligent duplicate detection to prevent accidental re-uploa
    - Workflow coordination
    - Error handling
    - Processing pipeline
+
+#### **Tagging System (`tagging/`):**
+1. **`tag_registry.py`** - Tag registry management
+   - Tag CRUD operations
+   - Media-tag associations
+   - Tag category management
+   - Registry persistence
 
 ## 🚀 **Installation**
 

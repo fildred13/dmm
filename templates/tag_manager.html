@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Tag Manager - Media Management Tool{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Tag Manager</h1>
+        <p>Manage tags and tag categories for your media files.</p>
+    </div>
+    
+    <div class="content-section">
+        <div class="placeholder-content">
+            <h2>🚧 Tag Manager - Coming Soon</h2>
+            <p>This page will allow you to:</p>
+            <ul>
+                <li>View all tags in the active registry</li>
+                <li>Create and manage tag categories</li>
+                <li>Add, edit, and delete tags</li>
+                <li>See tag usage statistics</li>
+                <li>Organize your tagging system</li>
+            </ul>
+            <p><strong>Note:</strong> The tag registry file will be automatically created when you first use the tagging features.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    color: white;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.content-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.placeholder-content {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.placeholder-content h2 {
+    color: #667eea;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+}
+
+.placeholder-content p {
+    margin-bottom: 1rem;
+    color: #555;
+    line-height: 1.6;
+}
+
+.placeholder-content ul {
+    text-align: left;
+    max-width: 500px;
+    margin: 1.5rem auto;
+    color: #555;
+}
+
+.placeholder-content li {
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+.placeholder-content strong {
+    color: #667eea;
+}
+</style>
+{% endblock %}
