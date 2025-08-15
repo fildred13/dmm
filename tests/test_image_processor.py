@@ -19,10 +19,10 @@ class TestImageProcessor:
         assert width == 576
         assert height == 324
         
-        # Test landscape image that fits within limits
+        # Test landscape image that needs upscaling
         width, height = ImageProcessor.calculate_dimensions(400, 300)
-        assert width == 400
-        assert height == 300
+        assert width == 576  # Upscaled to max width
+        assert height == 432  # 576 * (300/400) = 432
     
     def test_calculate_dimensions_portrait(self):
         """Test dimension calculation for portrait images"""
@@ -31,10 +31,10 @@ class TestImageProcessor:
         assert width == 576  # 1024 * (1080/1920) = 576
         assert height == 1024  # min(1920, 1024) = 1024
         
-        # Test portrait image that fits within limits
+        # Test portrait image that needs upscaling
         width, height = ImageProcessor.calculate_dimensions(300, 400)
-        assert width == 300
-        assert height == 400
+        assert width == 576  # Upscaled to max width
+        assert height == 768  # 576 * (400/300) = 768
     
     def test_calculate_dimensions_square(self):
         """Test dimension calculation for square images"""
@@ -43,10 +43,10 @@ class TestImageProcessor:
         assert width == 576
         assert height == 576
         
-        # Test square image that fits within limits
+        # Test square image that needs upscaling
         width, height = ImageProcessor.calculate_dimensions(500, 500)
-        assert width == 500
-        assert height == 500
+        assert width == 576  # Upscaled to max width
+        assert height == 576  # Square aspect ratio maintained
     
     def test_calculate_dimensions_edge_cases(self):
         """Test dimension calculation edge cases"""
@@ -55,10 +55,10 @@ class TestImageProcessor:
         assert width == 576
         assert height == 1024
         
-        # Test very small image
+        # Test very small image (should be upscaled)
         width, height = ImageProcessor.calculate_dimensions(100, 50)
-        assert width == 100
-        assert height == 50
+        assert width == 576  # Upscaled to max width
+        assert height == 288  # 576 * (50/100) = 288
     
     def test_resize_image_success(self, temp_dir):
         """Test successful image resizing"""

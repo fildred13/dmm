@@ -103,7 +103,37 @@
         padding: 0.5rem;
         border-radius: 4px;
         word-break: break-all;
+        margin-bottom: 0.5rem;
     }
+
+    .media-dimensions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+
+    .dimension-item {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .dimension-label {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        margin-bottom: 0.2rem;
+    }
+
+    .dimension-value {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+
 
     .loading {
         display: flex;
@@ -131,6 +161,16 @@
         <div class="media-counter" id="mediaCounter"></div>
         <div class="media-filename" id="mediaFilename"></div>
         <div class="media-path" id="mediaPath"></div>
+        <div class="media-dimensions" id="mediaDimensions" style="display: none;">
+            <div class="dimension-item">
+                <div class="dimension-label">Width</div>
+                <div class="dimension-value" id="mediaWidth">-</div>
+            </div>
+            <div class="dimension-item">
+                <div class="dimension-label">Height</div>
+                <div class="dimension-value" id="mediaHeight">-</div>
+            </div>
+        </div>
     </div>
 
     <div class="preview-container">
@@ -173,8 +213,15 @@ async function loadMediaList() {
     }
 }
 
-function showMedia(index) {
+async function showMedia(index) {
     if (index < 0 || index >= mediaList.length) return;
+    
+    // Stop any currently playing video before switching
+    const currentVideo = document.querySelector('#mediaDisplay video');
+    if (currentVideo) {
+        currentVideo.pause();
+        currentVideo.currentTime = 0;
+    }
     
     currentIndex = index;
     const media = mediaList[index];
@@ -183,11 +230,29 @@ function showMedia(index) {
     document.getElementById('prevBtn').disabled = index === 0;
     document.getElementById('nextBtn').disabled = index === mediaList.length - 1;
     
-    // Update media info
+    // Update basic media info
     document.getElementById('mediaInfo').style.display = 'block';
     document.getElementById('mediaCounter').textContent = `${index + 1} of ${mediaList.length}`;
     document.getElementById('mediaFilename').textContent = media.path.split('/').pop();
     document.getElementById('mediaPath').textContent = media.path;
+    
+    // Fetch detailed media info including dimensions
+    try {
+        const response = await fetch(`/api/media/${index}`);
+        const mediaInfo = await response.json();
+        
+        // Update dimensions if available
+        if (mediaInfo.width && mediaInfo.height) {
+            document.getElementById('mediaDimensions').style.display = 'flex';
+            document.getElementById('mediaWidth').textContent = `${mediaInfo.width}px`;
+            document.getElementById('mediaHeight').textContent = `${mediaInfo.height}px`;
+        } else {
+            document.getElementById('mediaDimensions').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error fetching media info:', error);
+        document.getElementById('mediaDimensions').style.display = 'none';
+    }
     
     // Show loading
     document.getElementById('mediaDisplay').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -200,8 +265,9 @@ function showMedia(index) {
         const video = document.createElement('video');
         video.src = '/' + media.path;
         video.controls = true;
-        video.autoplay = false;
-        video.muted = true;
+        video.autoplay = true;  // Auto-play videos
+        video.muted = true;     // Muted to allow autoplay
+        video.loop = true;      // Loop the video
         video.className = 'fade-in';
         video.onloadstart = () => {
             document.getElementById('mediaDisplay').innerHTML = '';
@@ -226,30 +292,30 @@ function showMedia(index) {
     }
 }
 
-function previousMedia() {
+async function previousMedia() {
     if (currentIndex > 0) {
-        showMedia(currentIndex - 1);
+        await showMedia(currentIndex - 1);
     }
 }
 
-function nextMedia() {
+async function nextMedia() {
     if (currentIndex < mediaList.length - 1) {
-        showMedia(currentIndex + 1);
+        await showMedia(currentIndex + 1);
     }
 }
 
 // Keyboard navigation
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', async (e) => {
     if (mediaList.length === 0) return;
     
     switch(e.key) {
         case 'ArrowLeft':
             e.preventDefault();
-            previousMedia();
+            await previousMedia();
             break;
         case 'ArrowRight':
             e.preventDefault();
-            nextMedia();
+            await nextMedia();
             break;
     }
 });

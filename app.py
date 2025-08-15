@@ -85,6 +85,16 @@ def get_media_info(index):
     """Get info about a specific media file by index"""
     media_info = registry.get_media_by_index(index)
     if media_info:
+        # Get additional file information including dimensions
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], media_info['path'].split('/')[-1])
+        if os.path.exists(file_path):
+            try:
+                file_info = media_processor.get_processing_info(file_path)
+                # Merge the registry info with file info
+                media_info.update(file_info)
+            except Exception as e:
+                # If we can't get file info, just continue with basic info
+                pass
         return jsonify(media_info)
     return jsonify({'error': 'Index out of range'}), 404
 

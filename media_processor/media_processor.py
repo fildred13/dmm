@@ -28,13 +28,13 @@ class MediaProcessor:
             If failed: (None, error_message)
         """
         filename = Path(file_path).name
-        file_type = FileUtils.get_file_type(filename)
+        file_type = FileUtils.get_file_type(filename, file_path)
         
         if not file_type:
             return None, "Unsupported file type"
         
         # Determine output format
-        output_ext = FileUtils.get_output_format(filename, file_type)
+        output_ext = FileUtils.get_output_format(filename, file_type, file_path)
         
         # Create output filename
         output_filename = FileUtils.create_output_filename(filename, output_ext)
@@ -59,7 +59,7 @@ class MediaProcessor:
     def get_processing_info(self, file_path: str) -> dict:
         """Get information about a file before processing"""
         filename = Path(file_path).name
-        file_type = FileUtils.get_file_type(filename)
+        file_type = FileUtils.get_file_type(filename, file_path)
         
         if not file_type:
             return {'error': 'Unsupported file type'}

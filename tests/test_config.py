@@ -61,8 +61,9 @@ class TestConfig:
         assert '.webm' in SUPPORTED_OUTPUT_FORMATS
         assert '.mp4' in SUPPORTED_OUTPUT_FORMATS
         assert '.png' in SUPPORTED_OUTPUT_FORMATS
-        assert '.gif' in SUPPORTED_OUTPUT_FORMATS
         assert '.jpg' in SUPPORTED_OUTPUT_FORMATS
+        # Note: .gif is no longer a supported output format
+        # Animated GIFs become .webm, static GIFs become .png
     
     def test_max_dimensions(self):
         """Test maximum dimensions configuration"""
