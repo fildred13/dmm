@@ -258,3 +258,73 @@ class TestMediaRegistry:
         assert result is True
         assert os.path.exists(registry_file)
         assert os.path.exists(nested_dir)
+    
+    def test_add_media_with_hash(self, temp_dir):
+        """Test adding media with hash"""
+        registry_file = os.path.join(temp_dir, "test_hash.json")
+        registry = MediaRegistry(registry_file)
+        
+        # Add media with hash
+        success = registry.add_media("test.jpg", "abc123hash")
+        assert success
+        
+        # Check that hash was stored
+        media = registry.get_all_media()
+        assert len(media) == 1
+        assert media[0]['path'] == "test.jpg"
+        assert media[0]['original_hash'] == "abc123hash"
+    
+    def test_find_duplicate_by_hash(self, temp_dir):
+        """Test finding duplicates by hash"""
+        registry_file = os.path.join(temp_dir, "test_duplicate.json")
+        registry = MediaRegistry(registry_file)
+        
+        # Add some media with hashes
+        registry.add_media("file1.jpg", "hash1")
+        registry.add_media("file2.jpg", "hash2")
+        registry.add_media("file3.jpg", "hash1")  # Duplicate hash
+        
+        # Find duplicate
+        duplicate = registry.find_duplicate_by_hash("hash1")
+        assert duplicate is not None
+        assert duplicate['path'] == "file3.jpg"  # Should find the most recent one
+        assert duplicate['original_hash'] == "hash1"
+        
+        # Non-existent hash should return None
+        no_duplicate = registry.find_duplicate_by_hash("nonexistent")
+        assert no_duplicate is None
+    
+    def test_find_filename_collision(self, temp_dir):
+        """Test filename collision detection"""
+        registry_file = os.path.join(temp_dir, "test_collision.json")
+        registry = MediaRegistry(registry_file)
+        
+        # Add some files
+        registry.add_media("media/file1.jpg")
+        registry.add_media("media/file2.png")
+        registry.add_media("media/file3.webm")
+        
+        # Test collision detection
+        assert registry.find_filename_collision("file1.jpg") is True
+        assert registry.find_filename_collision("file2.png") is True
+        assert registry.find_filename_collision("file3.webm") is True
+        assert registry.find_filename_collision("nonexistent.jpg") is False
+    
+    def test_get_unique_filename(self, temp_dir):
+        """Test unique filename generation"""
+        registry_file = os.path.join(temp_dir, "test_unique.json")
+        registry = MediaRegistry(registry_file)
+        
+        # Add some files
+        registry.add_media("media/test.jpg")
+        registry.add_media("media/test-1.jpg")
+        registry.add_media("media/test-2.jpg")
+        
+        # Test unique filename generation
+        assert registry.get_unique_filename("newfile.jpg") == "newfile.jpg"
+        assert registry.get_unique_filename("test.jpg") == "test-3.jpg"
+        assert registry.get_unique_filename("test-1.jpg") == "test-1-1.jpg"
+        
+        # Test with different extensions
+        registry.add_media("media/image.png")
+        assert registry.get_unique_filename("image.png") == "image-1.png"

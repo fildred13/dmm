@@ -59,6 +59,11 @@
         border-left-color: #dc3545;
     }
 
+    .upload-item.duplicate {
+        border-left-color: #ff9800;
+        background: rgba(255, 152, 0, 0.1);
+    }
+
     .upload-item.processing {
         border-left-color: #ffc107;
     }
@@ -92,6 +97,156 @@
 
     .status.error {
         color: #dc3545;
+    }
+
+    .status.duplicate {
+        color: #ff9800;
+    }
+
+    .duplicate-link {
+        color: #667eea;
+        text-decoration: underline;
+        cursor: pointer;
+        margin-left: 0.5rem;
+        position: relative;
+    }
+
+    .duplicate-link:hover {
+        color: #5a6fd8;
+    }
+
+    .duplicate-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 2000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .duplicate-modal.show {
+        display: flex;
+    }
+
+    .duplicate-modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 90vw;
+        max-height: 90vh;
+        position: relative;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .duplicate-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .duplicate-modal-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .duplicate-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+        padding: 0.5rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .duplicate-modal-close:hover {
+        background: #f0f0f0;
+        color: #333;
+    }
+
+    .duplicate-modal-filenames {
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .duplicate-modal-filenames .original {
+        color: #e74c3c;
+        font-weight: 500;
+    }
+
+    .duplicate-modal-filenames .duplicate {
+        color: #27ae60;
+        font-weight: 500;
+    }
+
+    .duplicate-modal-media {
+        max-width: 100%;
+        max-height: 70vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .duplicate-modal-media img,
+    .duplicate-modal-media video {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .clear-history-btn {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .clear-history-btn:hover {
+        background: #5a6268;
+    }
+
+    .upload-history-info {
+        background: rgba(102, 126, 234, 0.1);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 6px;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: #667eea;
+        text-align: center;
+    }
+
+    .sync-indicator {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 6px;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: #ffc107;
+        text-align: center;
+        display: none;
+    }
+
+    .sync-indicator.show {
+        display: block;
     }
 
     .progress-bar {
@@ -162,12 +317,43 @@
         </p>
     </div>
 
+    <div id="uploadHistoryInfo" class="upload-history-info" style="display: none;">
+        💾 Upload history is automatically saved. Your results will persist until you clear them.
+    </div>
+    
+    <div id="syncIndicator" class="sync-indicator">
+        🔄 Syncing upload status with server...
+    </div>
+    
     <div id="uploadList" class="upload-list"></div>
+    
+    <div id="clearHistoryContainer" style="display: none; text-align: center;">
+        <button class="clear-history-btn" onclick="clearUploadHistory()">
+            Clear Upload History
+        </button>
+    </div>
 </div>
 
 <div id="loading" class="loading">
     <div class="spinner"></div>
     <p>Processing files...</p>
+</div>
+
+<!-- Duplicate Preview Modal -->
+<div id="duplicateModal" class="duplicate-modal">
+    <div class="duplicate-modal-content">
+        <div class="duplicate-modal-header">
+            <div class="duplicate-modal-title">Duplicate File Preview</div>
+            <button class="duplicate-modal-close" onclick="closeDuplicateModal()">&times;</button>
+        </div>
+        <div class="duplicate-modal-filenames">
+            <div>Original: <span class="original" id="originalFilename"></span></div>
+            <div>Duplicate: <span class="duplicate" id="duplicateFilename"></span></div>
+        </div>
+        <div class="duplicate-modal-media" id="duplicateModalMedia">
+            <!-- Media content will be inserted here -->
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -204,9 +390,11 @@ fileInput.addEventListener('change', (e) => {
 function handleFiles(files) {
     if (files.length === 0) return;
     
-    // Clear previous uploads
-    uploadList.innerHTML = '';
+    // Don't clear previous uploads - append new ones
     loading.style.display = 'block';
+    
+    // Show upload history info
+    document.getElementById('uploadHistoryInfo').style.display = 'block';
     
     // Process each file
     files.forEach((file, index) => {
@@ -216,11 +404,15 @@ function handleFiles(files) {
         // Upload file
         uploadFile(file, uploadItem);
     });
+    
+    // Save upload state to localStorage for persistence
+    saveUploadState();
 }
 
 function createUploadItem(file, index) {
     const item = document.createElement('div');
     item.className = 'upload-item processing';
+    item.dataset.uploadTime = Date.now().toString(); // Store upload timestamp
     item.innerHTML = `
         <div class="file-info">
             <div>
@@ -262,6 +454,30 @@ async function uploadFile(file, uploadItem) {
             uploadItem.querySelector('.status').textContent = 'Success!';
             uploadItem.querySelector('.status').className = 'status success';
             uploadItem.querySelector('.progress-fill').style.width = '100%';
+        } else if (result.is_duplicate) {
+            // Handle duplicate file
+            uploadItem.classList.remove('processing');
+            uploadItem.classList.add('duplicate');
+            const statusElement = uploadItem.querySelector('.status');
+            statusElement.textContent = 'Duplicate detected';
+            statusElement.className = 'status duplicate';
+            
+            // Add clickable link for duplicate preview
+            const duplicateLink = document.createElement('span');
+            duplicateLink.className = 'duplicate-link';
+            duplicateLink.textContent = 'Click to preview duplicate';
+            duplicateLink.dataset.mediaPath = result.duplicate_info.path;
+            duplicateLink.dataset.originalFilename = file.name;
+            duplicateLink.dataset.duplicateFilename = result.duplicate_info.path.split('/').pop();
+            
+            // Add click event listener
+            duplicateLink.addEventListener('click', () => {
+                showDuplicateModal(duplicateLink);
+            });
+            
+            statusElement.appendChild(duplicateLink);
+            
+            uploadItem.querySelector('.progress-fill').style.width = '100%';
         } else {
             throw new Error(result.error);
         }
@@ -276,7 +492,446 @@ async function uploadFile(file, uploadItem) {
     const processingItems = uploadList.querySelectorAll('.upload-item.processing');
     if (processingItems.length === 0) {
         loading.style.display = 'none';
+        // Show clear history button if there are any completed uploads
+        const completedItems = uploadList.querySelectorAll('.upload-item.success, .upload-item.error, .upload-item.duplicate');
+        if (completedItems.length > 0) {
+            document.getElementById('clearHistoryContainer').style.display = 'block';
+        }
+    }
+    
+    // Save upload state after each file completes
+    saveUploadState();
+}
+
+function showDuplicateModal(linkElement) {
+    const modal = document.getElementById('duplicateModal');
+    const mediaContainer = document.getElementById('duplicateModalMedia');
+    const originalFilename = document.getElementById('originalFilename');
+    const duplicateFilename = document.getElementById('duplicateFilename');
+    
+    // Set filenames
+    originalFilename.textContent = linkElement.dataset.originalFilename;
+    duplicateFilename.textContent = linkElement.dataset.duplicateFilename;
+    
+    // Clear any existing content
+    mediaContainer.innerHTML = '';
+    
+    // Get media path and construct URL
+    const mediaPath = linkElement.dataset.mediaPath;
+    const mediaUrl = '/' + mediaPath;
+    
+    // Determine if it's an image or video based on file extension
+    const filename = mediaPath.toLowerCase();
+    const isVideo = filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.avi') || 
+                   filename.endsWith('.mov') || filename.endsWith('.mkv') || filename.endsWith('.flv') || 
+                   filename.endsWith('.wmv');
+    
+    if (isVideo) {
+        const video = document.createElement('video');
+        video.src = mediaUrl;
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.controls = true; // Show controls in modal
+        
+        video.onerror = () => {
+            mediaContainer.innerHTML = '<div style="color: red; padding: 20px; text-align: center;">Video failed to load</div>';
+        };
+        
+        mediaContainer.appendChild(video);
+    } else {
+        const img = document.createElement('img');
+        img.src = mediaUrl;
+        
+        img.onerror = () => {
+            mediaContainer.innerHTML = '<div style="color: red; padding: 20px; text-align: center;">Image failed to load</div>';
+        };
+        
+        mediaContainer.appendChild(img);
+    }
+    
+    // Show modal
+    modal.classList.add('show');
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDuplicateModal() {
+    const modal = document.getElementById('duplicateModal');
+    const mediaContainer = document.getElementById('duplicateModalMedia');
+    
+    // Hide modal
+    modal.classList.remove('show');
+    
+    // Clear content to stop video playback
+    mediaContainer.innerHTML = '';
+    
+    // Restore body scroll
+    document.body.style.overflow = '';
+}
+
+function clearUploadHistory() {
+    uploadList.innerHTML = '';
+    document.getElementById('clearHistoryContainer').style.display = 'none';
+    document.getElementById('uploadHistoryInfo').style.display = 'none';
+    // Clear localStorage backup
+    localStorage.removeItem('uploadHistory');
+}
+
+function saveUploadState() {
+    // Save current upload list to localStorage
+    const uploadItems = uploadList.querySelectorAll('.upload-item');
+    const uploadState = Array.from(uploadItems).map(item => ({
+        className: item.className,
+        innerHTML: item.innerHTML,
+        uploadTime: item.dataset.uploadTime
+    }));
+    localStorage.setItem('uploadHistory', JSON.stringify(uploadState));
+}
+
+function loadUploadState() {
+    // Load upload history from localStorage on page load
+    const savedState = localStorage.getItem('uploadHistory');
+    if (savedState) {
+        try {
+            const uploadState = JSON.parse(savedState);
+            uploadState.forEach(itemState => {
+                const item = document.createElement('div');
+                item.className = itemState.className;
+                item.innerHTML = itemState.innerHTML;
+                if (itemState.uploadTime) {
+                    item.dataset.uploadTime = itemState.uploadTime;
+                }
+                uploadList.appendChild(item);
+                
+                // Restore hover functionality for duplicate items
+                const duplicateLink = item.querySelector('.duplicate-link');
+                if (duplicateLink) {
+                    // Check if this is an old link format (has href attribute)
+                    if (duplicateLink.hasAttribute('href')) {
+                        // This is an old format, convert it to new hover format
+                        convertOldDuplicateLink(duplicateLink);
+                    } else if (duplicateLink.dataset.mediaPath) {
+                        // This is already in new format, restore handlers
+                        restoreDuplicatePreviewHandlers(duplicateLink);
+                    }
+                }
+            });
+            
+            // Show clear history button and info if there are items
+            if (uploadState.length > 0) {
+                document.getElementById('clearHistoryContainer').style.display = 'block';
+                document.getElementById('uploadHistoryInfo').style.display = 'block';
+            }
+            
+            // Sync any processing items to check their actual status
+            syncProcessingItems();
+        } catch (e) {
+            console.error('Error loading upload state:', e);
+            localStorage.removeItem('uploadHistory');
+        }
     }
 }
+
+function convertOldDuplicateLink(oldLink) {
+    // Extract the media path from the old href format
+    const href = oldLink.getAttribute('href');
+    const match = href.match(/\/preview\?index=(\d+)/);
+    
+    if (match) {
+        const index = parseInt(match[1]);
+        // We need to get the media path from the server
+        fetch('/api/media')
+            .then(response => response.json())
+            .then(mediaList => {
+                if (mediaList[index]) {
+                    const mediaPath = mediaList[index].path;
+                    
+                    // Convert the old link to new format
+                    oldLink.removeAttribute('href');
+                    oldLink.removeAttribute('target');
+                    oldLink.removeAttribute('rel');
+                    oldLink.textContent = 'Click to preview duplicate';
+                    oldLink.dataset.mediaPath = mediaPath;
+                    oldLink.dataset.originalFilename = 'Unknown'; // We don't have the original filename for old links
+                    oldLink.dataset.duplicateFilename = mediaPath.split('/').pop();
+                    
+                    // Remove old click event listeners
+                    const newLink = oldLink.cloneNode(true);
+                    oldLink.parentNode.replaceChild(newLink, oldLink);
+                    
+                    // Add click event listener for modal
+                    newLink.addEventListener('click', () => {
+                        showDuplicateModal(newLink);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error converting old duplicate link:', error);
+            });
+    }
+}
+
+function restoreDuplicatePreviewHandlers(linkElement) {
+    // Add click event listener for modal
+    linkElement.addEventListener('click', () => {
+        showDuplicateModal(linkElement);
+    });
+}
+
+// Global flag to prevent multiple simultaneous syncs
+let isSyncing = false;
+
+async function syncProcessingItems() {
+    // Prevent multiple simultaneous syncs
+    if (isSyncing) {
+        console.log('Sync already in progress, skipping...');
+        return;
+    }
+    
+    const processingItems = uploadList.querySelectorAll('.upload-item.processing');
+    if (processingItems.length === 0) return;
+    
+    console.log(`Syncing ${processingItems.length} processing items...`);
+    isSyncing = true;
+    
+    // Show sync indicator
+    const syncIndicator = document.getElementById('syncIndicator');
+    syncIndicator.classList.add('show');
+    
+    // Get the current media list from the server to check what was actually processed
+    try {
+        const response = await fetch('/api/media');
+        const mediaList = await response.json();
+        
+        // For each processing item, check if the file was actually processed
+        for (const item of processingItems) {
+            // Double-check that the item is still in processing state
+            if (!item.classList.contains('processing')) {
+                console.log('Item no longer in processing state, skipping...');
+                continue;
+            }
+            
+            const fileName = item.querySelector('.file-name').textContent;
+            const fileExtension = fileName.split('.').pop().toLowerCase();
+            
+            console.log(`\n--- Syncing item: ${fileName} ---`);
+            
+            // Check if this file appears in the media list
+            const processedFile = findProcessedFile(fileName, fileExtension, mediaList);
+            
+            if (processedFile) {
+                console.log(`✅ Found processed file: ${processedFile.path}`);
+                // File was processed successfully - update UI
+                updateItemToSuccess(item, processedFile);
+            } else {
+                console.log(`❌ No processed file found`);
+                // Check if it's been more than 30 seconds since upload started
+                const uploadTime = item.dataset.uploadTime;
+                const timeSinceUpload = uploadTime ? (Date.now() - parseInt(uploadTime)) : 0;
+                console.log(`Time since upload: ${timeSinceUpload}ms`);
+                
+                if (uploadTime && timeSinceUpload > 30000) {
+                    console.log(`⏰ Timeout detected, marking as error`);
+                    // Likely failed - update to error state
+                    updateItemToError(item, 'Processing timeout - file may have failed');
+                } else {
+                    console.log(`⏳ Still within timeout window, keeping as processing`);
+                }
+            }
+        }
+        
+        // Update loading state and clear history button
+        updateLoadingState();
+        
+        // Hide sync indicator
+        syncIndicator.classList.remove('show');
+    } catch (error) {
+        console.error('Error syncing processing items:', error);
+        syncIndicator.classList.remove('show');
+    } finally {
+        // Always reset the syncing flag
+        isSyncing = false;
+    }
+}
+
+function findProcessedFile(originalFileName, originalExtension, mediaList) {
+    // Look for the file in the media list
+    // Handle both exact matches and format conversions
+    const baseName = originalFileName.replace(`.${originalExtension}`, '');
+    
+    console.log(`Looking for file: ${originalFileName} (base: ${baseName}, ext: ${originalExtension})`);
+    console.log(`Available media files:`, mediaList.map(m => m.path.split('/').pop()));
+    
+    for (const media of mediaList) {
+        const mediaFileName = media.path.split('/').pop();
+        const mediaBaseName = mediaFileName.split('.').slice(0, -1).join('.');
+        const mediaExtension = mediaFileName.split('.').pop().toLowerCase();
+        
+        console.log(`Checking: ${mediaFileName} (base: ${mediaBaseName}, ext: ${mediaExtension})`);
+        
+        // Check for exact match or format conversion
+        if (mediaBaseName === baseName) {
+            console.log(`Base name match found: ${mediaBaseName}`);
+            // Check if this is a reasonable format conversion
+            if (isReasonableFormatConversion(originalExtension, mediaExtension)) {
+                console.log(`Format conversion valid: ${originalExtension} → ${mediaExtension}`);
+                return media;
+            } else {
+                console.log(`Format conversion invalid: ${originalExtension} → ${mediaExtension}`);
+            }
+        } else {
+            // Check for filename collision suffixes (e.g., "image.jpg" → "image-1.jpg")
+            const suffixMatch = mediaBaseName.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)$`));
+            if (suffixMatch) {
+                console.log(`Suffix match found: ${mediaBaseName} (suffix: ${suffixMatch[1]})`);
+                if (isReasonableFormatConversion(originalExtension, mediaExtension)) {
+                    console.log(`Format conversion valid with suffix: ${originalExtension} → ${mediaExtension}`);
+                    return media;
+                } else {
+                    console.log(`Format conversion invalid with suffix: ${originalExtension} → ${mediaExtension}`);
+                }
+            }
+        }
+    }
+    
+    console.log(`No matching file found for: ${originalFileName}`);
+    return null;
+}
+
+function isReasonableFormatConversion(originalExt, processedExt) {
+    // Define reasonable format conversions
+    const conversions = {
+        'jpg': ['jpg', 'png'],
+        'jpeg': ['jpg', 'png'],
+        'png': ['png'],
+        'gif': ['png', 'webm'],
+        'webp': ['png', 'webm'],
+        'bmp': ['png'],
+        'tiff': ['png'],
+        'mp4': ['webm'],
+        'avi': ['webm'],
+        'mov': ['webm'],
+        'mkv': ['webm'],
+        'flv': ['webm'],
+        'wmv': ['webm']
+    };
+    
+    return conversions[originalExt] && conversions[originalExt].includes(processedExt);
+}
+
+function updateItemToSuccess(item, processedFile) {
+    // Don't update if already in a final state
+    if (item.classList.contains('success') || item.classList.contains('error') || item.classList.contains('duplicate')) {
+        console.log('Item already in final state, skipping update');
+        return;
+    }
+    
+    item.classList.remove('processing');
+    item.classList.add('success');
+    const statusElement = item.querySelector('.status');
+    statusElement.textContent = 'Success!';
+    statusElement.className = 'status success';
+    item.querySelector('.progress-fill').style.width = '100%';
+    
+    // Update filename to show the actual processed filename
+    const fileNameElement = item.querySelector('.file-name');
+    const originalName = fileNameElement.textContent;
+    const processedName = processedFile.path.split('/').pop();
+    if (originalName !== processedName) {
+        fileNameElement.textContent = `${originalName} → ${processedName}`;
+    }
+    
+    console.log(`Updated item to success: ${originalName} → ${processedName}`);
+}
+
+function updateItemToError(item, errorMessage) {
+    // Don't update if already in a final state
+    if (item.classList.contains('success') || item.classList.contains('error') || item.classList.contains('duplicate')) {
+        console.log('Item already in final state, skipping update');
+        return;
+    }
+    
+    item.classList.remove('processing');
+    item.classList.add('error');
+    const statusElement = item.querySelector('.status');
+    statusElement.textContent = 'Error: ' + errorMessage;
+    statusElement.className = 'status error';
+    
+    console.log(`Updated item to error: ${errorMessage}`);
+}
+
+function updateLoadingState() {
+    const processingItems = uploadList.querySelectorAll('.upload-item.processing');
+    if (processingItems.length === 0) {
+        loading.style.display = 'none';
+        // Show clear history button if there are any completed uploads
+        const completedItems = uploadList.querySelectorAll('.upload-item.success, .upload-item.error, .upload-item.duplicate');
+        if (completedItems.length > 0) {
+            document.getElementById('clearHistoryContainer').style.display = 'block';
+        }
+    }
+}
+
+// Debounce function to prevent rapid successive calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Debounced sync function
+const debouncedSync = debounce(() => {
+    const processingItems = uploadList.querySelectorAll('.upload-item.processing');
+    if (processingItems.length > 0) {
+        console.log('Debounced sync triggered...');
+        syncProcessingItems();
+    }
+}, 500); // 500ms debounce
+
+// Load upload state when page loads
+document.addEventListener('DOMContentLoaded', loadUploadState);
+
+// Add a global function to clear localStorage for testing
+window.clearUploadHistoryData = function() {
+    localStorage.removeItem('uploadHistory');
+    location.reload();
+};
+
+// Close modal when clicking outside of it
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('duplicateModal');
+    if (e.target === modal) {
+        closeDuplicateModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('duplicateModal');
+        if (modal.classList.contains('show')) {
+            closeDuplicateModal();
+        }
+    }
+});
+
+// Sync processing items when user returns to the tab
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        // User returned to the tab, sync any processing items
+        debouncedSync();
+    }
+});
+
+// Also sync when the window gains focus
+window.addEventListener('focus', debouncedSync);
 </script>
 {% endblock %}

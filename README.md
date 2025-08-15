@@ -38,6 +38,7 @@ dmm/
 - **Preview System**: Beautiful media preview with navigation controls
 - **Delete Functionality**: Delete media files with confirmation dialog
 - **Chronological Ordering**: Media files ordered by upload time (most recent first)
+- **Duplicate Detection**: Hash-based duplicate detection with visual indicators and quick access to existing files
 
 ## 🎨 **User Interface**
 
@@ -61,6 +62,35 @@ dmm/
 - **Animated WebPs**: Converted to animated WEBM videos
 - **Static GIFs**: Converted to PNG images
 - **Static WebPs**: Converted to PNG images
+
+## 🔍 **Duplicate Detection**
+
+The tool includes intelligent duplicate detection to prevent accidental re-uploads:
+
+- **Hash-Based Detection**: Uses MD5 hashing to identify duplicate files by content, not just filename
+- **Visual Indicators**: Duplicate files are highlighted with orange styling and clear labels
+- **Quick Access**: Click "View duplicate" to open the existing file in preview mode
+- **Content-Aware**: Different files with the same name are treated as unique, while identical files with different names are detected as duplicates
+- **Efficient Processing**: Hash calculation is fast and doesn't impact upload performance
+
+**How It Works:**
+1. When a file is uploaded, its content is hashed using MD5
+2. The hash is compared against all existing files in the registry
+3. If a match is found, the upload is flagged as a duplicate and processing is skipped entirely
+4. The user can click to view the existing file for verification
+5. Non-duplicate files proceed with normal processing and storage
+6. If files have the same name but different content, a unique `-<integer>` suffix is automatically added
+
+**Upload History:**
+- Upload results persist until explicitly cleared with the "Clear Upload History" button
+- **Automatic persistence** - Upload history is saved to browser localStorage and survives page refreshes/navigation
+- **Visual indicator** - Clear message shows that upload history is automatically saved
+- **Batch review capability** - Can handle multiple upload batches and review all results without losing context
+- **Safe duplicate viewing** - "View duplicate" links open in new tabs without affecting the upload page
+- **Manual control** - Clear button appears automatically when uploads are completed
+- **Smart UI sync** - Upload status automatically syncs with server when returning to the page
+- **Background processing** - Files continue processing on server even if you navigate away
+- **Real-time updates** - UI updates to show actual processing results when you return
 
 ## 🏗️ **Modular Architecture**
 

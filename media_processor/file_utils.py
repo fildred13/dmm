@@ -3,6 +3,7 @@ File Utilities
 Handles file type detection, path operations, and file validation
 """
 
+import hashlib
 from pathlib import Path
 from typing import Optional, Tuple
 from PIL import Image
@@ -98,6 +99,20 @@ class FileUtils:
     def create_output_filename(input_filename: str, output_ext: str) -> str:
         """Create output filename with new extension"""
         return Path(input_filename).stem + output_ext
+    
+    @staticmethod
+    def calculate_file_hash(file_path: str) -> str:
+        """Calculate a fast hash of the file content for duplicate detection"""
+        hash_md5 = hashlib.md5()
+        try:
+            with open(file_path, "rb") as f:
+                # Read file in chunks to handle large files efficiently
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except Exception as e:
+            print(f"Error calculating hash for {file_path}: {e}")
+            return ""
     
     @staticmethod
     def normalize_path(path: str) -> str:

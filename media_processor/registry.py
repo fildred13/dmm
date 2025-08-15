@@ -5,7 +5,7 @@ Handles loading, saving, and managing the media registry JSON file
 
 import json
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .config import DEFAULT_REGISTRY_FILE
 
 
@@ -57,11 +57,14 @@ class MediaRegistry:
             print(f"Error saving registry: {e}")
             return False
     
-    def add_media(self, media_path: str) -> bool:
+    def add_media(self, media_path: str, original_hash: str = None) -> bool:
         """Add a new media entry to the registry (most recent first)"""
         registry = self.load()
         # Insert at the beginning to maintain reverse chronological order
-        registry.insert(0, {'path': media_path})
+        entry = {'path': media_path}
+        if original_hash:
+            entry['original_hash'] = original_hash
+        registry.insert(0, entry)
         return self.save(registry)
     
     def get_all_media(self) -> List[Dict[str, Any]]:
@@ -90,3 +93,34 @@ class MediaRegistry:
     def clear_registry(self) -> bool:
         """Clear all entries from the registry"""
         return self.save([])
+    
+    def find_duplicate_by_hash(self, file_hash: str) -> Optional[Dict[str, Any]]:
+        """Find a media entry with the same hash, if it exists"""
+        registry = self.load()
+        for entry in registry:
+            if entry.get('original_hash') == file_hash:
+                return entry
+        return None
+    
+    def find_filename_collision(self, filename: str) -> bool:
+        """Check if a filename already exists in the registry"""
+        registry = self.load()
+        for entry in registry:
+            if entry['path'].split('/')[-1] == filename:
+                return True
+        return False
+    
+    def get_unique_filename(self, base_filename: str) -> str:
+        """Generate a unique filename by adding a numeric suffix if needed"""
+        if not self.find_filename_collision(base_filename):
+            return base_filename
+        
+        # Split filename into name and extension
+        name, ext = os.path.splitext(base_filename)
+        counter = 1
+        
+        while True:
+            new_filename = f"{name}-{counter}{ext}"
+            if not self.find_filename_collision(new_filename):
+                return new_filename
+            counter += 1

@@ -36,7 +36,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert error is None
         # Use normalized path comparison
@@ -56,7 +56,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert error is None
         # Use normalized path comparison
@@ -76,7 +76,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert error is None
         # Use normalized path comparison
@@ -101,7 +101,7 @@ class TestMediaProcessor:
             m.setattr(FileUtils, 'is_animated_gif', lambda x: True)
             
             processor = MediaProcessor(registry_file)
-            relative_path, error = processor.process_media_file(input_path)
+            relative_path, error = processor.process_media_file(input_path, None)
             
             assert error is None
             # Use normalized path comparison
@@ -129,7 +129,7 @@ class TestMediaProcessor:
             m.setattr(VideoProcessor, 'convert_webp_to_webm', lambda x, y: True)
             
             processor = MediaProcessor(registry_file)
-            relative_path, error = processor.process_media_file(input_path)
+            relative_path, error = processor.process_media_file(input_path, None)
             
             assert error is None
             # Use normalized path comparison
@@ -154,7 +154,7 @@ class TestMediaProcessor:
             m.setattr(FileUtils, 'is_animated_webp', lambda x: False)
             
             processor = MediaProcessor(registry_file)
-            relative_path, error = processor.process_media_file(input_path)
+            relative_path, error = processor.process_media_file(input_path, None)
             
             assert error is None
             # Use normalized path comparison
@@ -173,7 +173,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert error is None
         # Use normalized path comparison
@@ -191,7 +191,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert relative_path is None
         assert error == "Unsupported file type"
@@ -209,7 +209,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert relative_path is None
         assert "Failed to process video" in error
@@ -224,7 +224,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert relative_path is None
         assert error is not None
@@ -292,7 +292,7 @@ class TestMediaProcessor:
         registry_file = os.path.join(temp_dir, "test_registry.json")
         
         processor = MediaProcessor(registry_file)
-        relative_path, error = processor.process_media_file(input_path)
+        relative_path, error = processor.process_media_file(input_path, None)
         
         assert error is None
         # Should use forward slashes regardless of OS

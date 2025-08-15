@@ -215,6 +215,29 @@ class TestFileUtils:
         assert FileUtils.format_file_size(1024) == "1.0 KB"
         assert FileUtils.format_file_size(1024 * 1024) == "1.0 MB"
         assert FileUtils.format_file_size(1024 * 1024 * 1024) == "1.0 GB"
+    
+    def test_calculate_file_hash(self, temp_dir):
+        """Test file hash calculation"""
+        # Create a test file
+        test_file = os.path.join(temp_dir, "test.txt")
+        with open(test_file, "w") as f:
+            f.write("test content")
+        
+        # Calculate hash
+        hash1 = FileUtils.calculate_file_hash(test_file)
+        assert len(hash1) == 32  # MD5 hash is 32 characters
+        
+        # Same content should produce same hash
+        hash2 = FileUtils.calculate_file_hash(test_file)
+        assert hash1 == hash2
+        
+        # Different content should produce different hash
+        test_file2 = os.path.join(temp_dir, "test2.txt")
+        with open(test_file2, "w") as f:
+            f.write("different content")
+        
+        hash3 = FileUtils.calculate_file_hash(test_file2)
+        assert hash1 != hash3
         
         # Test intermediate values
         assert "KB" in FileUtils.format_file_size(1500)

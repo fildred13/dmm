@@ -30,9 +30,13 @@ class MediaProcessor:
         # Ensure media folder exists and get its path
         self.upload_folder = ensure_media_folder_exists(registry_path)
     
-    def process_media_file(self, file_path: str) -> Tuple[Optional[str], Optional[str]]:
+    def process_media_file(self, file_path: str, registry=None) -> Tuple[Optional[str], Optional[str]]:
         """
         Process a single media file: resize and convert if necessary
+        
+        Args:
+            file_path: Path to the file to process
+            registry: Optional registry instance for filename collision detection
         
         Returns:
             Tuple of (relative_path, error_message)
@@ -45,11 +49,19 @@ class MediaProcessor:
         if not file_type:
             return None, "Unsupported file type"
         
+        # Calculate hash of original file for duplicate detection
+        original_hash = FileUtils.calculate_file_hash(file_path)
+        
         # Determine output format
         output_ext = FileUtils.get_output_format(filename, file_type, file_path)
         
         # Create output filename
         output_filename = FileUtils.create_output_filename(filename, output_ext)
+        
+        # Handle filename collisions if registry is provided
+        if registry:
+            output_filename = registry.get_unique_filename(output_filename)
+        
         output_path = os.path.join(self.upload_folder, output_filename)
         
         try:
@@ -67,6 +79,10 @@ class MediaProcessor:
             
         except Exception as e:
             return None, str(e)
+    
+    def get_file_hash(self, file_path: str) -> str:
+        """Get the hash of a file for duplicate detection"""
+        return FileUtils.calculate_file_hash(file_path)
     
     def get_processing_info(self, file_path: str) -> dict:
         """Get information about a file before processing"""

@@ -111,14 +111,32 @@ def upload_file():
     file.save(temp_path)
     
     try:
-        # Process the file
-        relative_path, error = media_processor.process_media_file(temp_path)
+        # Calculate hash of uploaded file for duplicate detection
+        file_hash = media_processor.get_file_hash(temp_path)
+        
+        # Check for duplicates
+        duplicate_entry = registry.find_duplicate_by_hash(file_hash)
+        
+        if duplicate_entry:
+            # This is a duplicate file - skip processing entirely
+            return jsonify({
+                'success': False,
+                'is_duplicate': True,
+                'duplicate_info': {
+                    'path': duplicate_entry['path'],
+                    'index': registry.get_all_media().index(duplicate_entry)
+                },
+                'message': f'Duplicate file detected: {file.filename}'
+            }), 409  # 409 Conflict
+        
+        # Process the file (pass registry for filename collision handling)
+        relative_path, error = media_processor.process_media_file(temp_path, registry)
         
         if error:
             return jsonify({'error': error}), 400
         
-        # Add to registry
-        if registry.add_media(relative_path):
+        # Add to registry with hash
+        if registry.add_media(relative_path, file_hash):
             return jsonify({
                 'success': True,
                 'path': relative_path,
