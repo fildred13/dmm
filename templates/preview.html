@@ -4,39 +4,72 @@
 
 {% block extra_css %}
 <style>
-    .preview-container {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    .media-display {
-        background: rgba(0, 0, 0, 0.8);
-        border-radius: 16px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        min-height: 400px;
+    .preview-layout {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
+        gap: 1.5rem;
+        height: calc(100vh - 250px);
+        min-height: 500px;
+        max-height: 900px;
     }
 
-    .media-display img,
-    .media-display video {
-        max-width: 100%;
-        max-height: 600px;
-        border-radius: 8px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    .preview-sidebar {
+        flex: 0 0 280px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
-    .media-display video {
-        width: auto;
-        height: auto;
+    .preview-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
     }
 
-    .no-media {
+    .media-info {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .media-counter {
+        font-size: 1rem;
+        color: #667eea;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .media-filename {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        word-break: break-word;
+    }
+
+    .media-path {
         color: #666;
-        font-size: 1.2rem;
+        font-family: monospace;
+        font-size: 0.8rem;
+        background: rgba(0, 0, 0, 0.05);
+        padding: 0.4rem;
+        border-radius: 4px;
+        word-break: break-all;
+        margin-bottom: 0.5rem;
+    }
+
+    .media-dimensions {
+        font-size: 0.9rem;
+        color: #667eea;
+        font-weight: 500;
+    }
+
+    .dimensions-text {
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        display: inline-block;
     }
 
     .navigation {
@@ -44,7 +77,7 @@
         justify-content: center;
         align-items: center;
         gap: 1rem;
-        margin-bottom: 2rem;
+        flex-shrink: 0;
     }
 
     .nav-btn {
@@ -74,72 +107,44 @@
         cursor: not-allowed;
     }
 
-    .media-info {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .media-counter {
-        font-size: 1.1rem;
-        color: #667eea;
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-    }
-
-    .media-filename {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 0.5rem;
-    }
-
-    .media-path {
-        color: #666;
-        font-family: monospace;
-        font-size: 0.9rem;
-        background: rgba(0, 0, 0, 0.05);
-        padding: 0.5rem;
-        border-radius: 4px;
-        word-break: break-all;
-        margin-bottom: 0.5rem;
-    }
-
-    .media-dimensions {
+    .media-display {
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 16px;
+        padding: 1rem;
+        flex: 1;
         display: flex;
-        gap: 1rem;
+        align-items: center;
         justify-content: center;
-        margin-top: 0.5rem;
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
     }
 
-    .dimension-item {
-        background: rgba(102, 126, 234, 0.1);
-        color: #667eea;
-        padding: 0.5rem 1rem;
+    .media-display img,
+    .media-display video {
+        max-width: 100%;
+        max-height: 100%;
         border-radius: 8px;
-        font-weight: 500;
-        font-size: 0.9rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        object-fit: contain;
     }
 
-    .dimension-label {
-        font-size: 0.8rem;
-        opacity: 0.8;
-        margin-bottom: 0.2rem;
+    .media-display video {
+        width: auto;
+        height: auto;
     }
 
-    .dimension-value {
-        font-size: 1rem;
-        font-weight: 600;
+    .no-media {
+        color: #666;
+        font-size: 1.1rem;
+        text-align: center;
     }
-
-
 
     .loading {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 400px;
+        height: 100%;
     }
 
     .fade-in {
@@ -150,38 +155,58 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 768px) {
+        .preview-layout {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .preview-sidebar {
+            flex: none;
+            order: 2;
+        }
+        
+        .preview-main {
+            order: 1;
+        }
+        
+        .media-display {
+            min-height: 400px;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="card">
-    <h1 style="text-align: center; margin-bottom: 2rem; color: #667eea;">Preview Media</h1>
+    <h1 style="text-align: center; margin-bottom: 1rem; color: #667eea;">Preview Media</h1>
     
-    <div id="mediaInfo" class="media-info" style="display: none;">
-        <div class="media-counter" id="mediaCounter"></div>
-        <div class="media-filename" id="mediaFilename"></div>
-        <div class="media-path" id="mediaPath"></div>
-        <div class="media-dimensions" id="mediaDimensions" style="display: none;">
-            <div class="dimension-item">
-                <div class="dimension-label">Width</div>
-                <div class="dimension-value" id="mediaWidth">-</div>
+    <div class="preview-layout">
+        <div class="preview-sidebar">
+            <div id="mediaInfo" class="media-info" style="display: none;">
+                <div class="media-counter" id="mediaCounter"></div>
+                <div class="media-filename" id="mediaFilename"></div>
+                <div class="media-path" id="mediaPath"></div>
+                <div class="media-dimensions" id="mediaDimensions" style="display: none;">
+                    <span class="dimensions-text">
+                        <span id="mediaWidth">-</span> × <span id="mediaHeight">-</span>
+                    </span>
+                </div>
             </div>
-            <div class="dimension-item">
-                <div class="dimension-label">Height</div>
-                <div class="dimension-value" id="mediaHeight">-</div>
+            
+            <div class="navigation" id="navigation" style="display: none;">
+                <button class="nav-btn" id="prevBtn" onclick="previousMedia()">‹</button>
+                <button class="nav-btn" id="nextBtn" onclick="nextMedia()">›</button>
             </div>
         </div>
-    </div>
-
-    <div class="preview-container">
-        <div class="media-display" id="mediaDisplay">
-            <div class="no-media">No media files found. Upload some files first!</div>
+        
+        <div class="preview-main">
+            <div class="media-display" id="mediaDisplay">
+                <div class="no-media">No media files found. Upload some files first!</div>
+            </div>
         </div>
-    </div>
-
-    <div class="navigation" id="navigation" style="display: none;">
-        <button class="nav-btn" id="prevBtn" onclick="previousMedia()">‹</button>
-        <button class="nav-btn" id="nextBtn" onclick="nextMedia()">›</button>
     </div>
 </div>
 {% endblock %}
@@ -243,7 +268,7 @@ async function showMedia(index) {
         
         // Update dimensions if available
         if (mediaInfo.width && mediaInfo.height) {
-            document.getElementById('mediaDimensions').style.display = 'flex';
+            document.getElementById('mediaDimensions').style.display = 'block';
             document.getElementById('mediaWidth').textContent = `${mediaInfo.width}px`;
             document.getElementById('mediaHeight').textContent = `${mediaInfo.height}px`;
         } else {
