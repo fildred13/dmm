@@ -74,7 +74,8 @@ class MediaProcessor:
                 return None, f"Failed to process {file_type}"
             
             # Return relative path for registry (always use forward slashes for cross-platform compatibility)
-            relative_path = FileUtils.normalize_path(f'media/{output_filename}')
+            folder_name = os.path.basename(self.upload_folder)
+            relative_path = FileUtils.normalize_path(f'{folder_name}/{output_filename}')
             return relative_path, None
             
         except Exception as e:

@@ -96,13 +96,13 @@ class TestMediaFolderFunctions:
         registry_path = "/path/to/registry.json"
         media_folder = get_media_folder_from_registry(registry_path)
         # Use os.path.normpath to handle cross-platform path differences
-        expected_folder = os.path.normpath("/path/to/media")
+        expected_folder = os.path.normpath("/path/to/events")
         actual_folder = os.path.normpath(media_folder)
         assert actual_folder == expected_folder
     
     def test_get_tag_registry_path(self):
         """Test getting tag registry path from media registry path"""
-        media_registry_path = "/path/to/media_registry.json"
+        media_registry_path = "/path/to/events_registry.json"
         tag_registry_path = get_tag_registry_path(media_registry_path)
         expected_path = os.path.normpath("/path/to/tag_registry.json")
         actual_path = os.path.normpath(tag_registry_path)
@@ -114,7 +114,7 @@ class TestMediaFolderFunctions:
         media_folder = ensure_media_folder_exists(registry_path)
         
         assert os.path.exists(media_folder)
-        assert media_folder == os.path.join(temp_dir, "media")
+        assert media_folder == os.path.join(temp_dir, "events")
 
 
 class TestPersistentRegistryPath:

@@ -254,9 +254,14 @@ def get_media_count():
     return jsonify({'count': app_state.registry.get_media_count()})
 
 
-@app.route('/media/<path:filename>')
-def serve_media(filename):
+@app.route('/<folder_name>/<path:filename>')
+def serve_media(folder_name, filename):
     """Serve media files from the current registry's media directory"""
+    # Verify that the folder name matches the current upload folder
+    current_folder_name = os.path.basename(app_state.media_processor.upload_folder)
+    if folder_name != current_folder_name:
+        return jsonify({'error': 'Invalid media path'}), 404
+    
     return send_from_directory(app_state.media_processor.upload_folder, filename)
 
 

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
 
 # Registry Configuration
-DEFAULT_REGISTRY_FILE = 'media_registry.json'
+DEFAULT_REGISTRY_FILE = 'events_registry.json'
 CONFIG_FILE = '.dmm_config.json'
 
 
@@ -75,15 +75,15 @@ def save_last_registry_path(registry_path: str) -> bool:
 def get_media_folder_from_registry(registry_path: str) -> str:
     """Get the media folder path based on the registry file location"""
     registry_dir = os.path.dirname(registry_path)
-    return os.path.join(registry_dir, 'media')
+    return os.path.join(registry_dir, 'events')
 
 
 def get_tag_registry_path(media_registry_path: str) -> str:
     """Get the tag registry path based on the media registry file location"""
     registry_dir = os.path.dirname(media_registry_path)
     registry_name = os.path.basename(media_registry_path)
-    # Replace media_registry.json with tag_registry.json
-    tag_registry_name = registry_name.replace('media_registry.json', 'tag_registry.json')
+    # Replace events_registry.json with tag_registry.json
+    tag_registry_name = registry_name.replace('events_registry.json', 'tag_registry.json')
     return os.path.join(registry_dir, tag_registry_name)
 
 

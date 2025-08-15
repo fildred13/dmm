@@ -358,7 +358,7 @@
              <p>Enter the full path to a media registry file:</p>
              <div class="registry-input-container">
                  <input type="text" class="registry-input" id="registryPathInput" 
-                        placeholder="e.g., C:\Users\YourName\Documents\media_registry.json">
+                        placeholder="e.g., C:\Users\YourName\Documents\events_registry.json">
                  <button class="registry-browse-btn" onclick="switchRegistry()">Switch</button>
              </div>
              <div class="registry-recent">
@@ -500,7 +500,7 @@
             
             // Basic validation to ensure it looks like a full path
             if (!registryPath.includes('/') && !registryPath.includes('\\')) {
-                alert('Please enter the full path to the registry file (e.g., C:\\path\\to\\media_registry.json)');
+                alert('Please enter the full path to the registry file (e.g., C:\\path\\to\\events_registry.json)');
                 return;
             }
             

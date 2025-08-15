@@ -11,7 +11,7 @@ dmm/
 ├── app.py                      # Main Flask application
 ├── config.py                   # Global application configuration
 ├── requirements.txt            # Python dependencies
-├── media_registry.json         # Media registry (auto-generated)
+├── events_registry.json         # Media registry (auto-generated)
 ├── tag_registry.json           # Tag registry (auto-generated)
 ├── .dmm_config.json           # App configuration (auto-generated)
 ├── media/                      # Processed media files (auto-generated)
@@ -54,7 +54,7 @@ dmm/
 The tool includes a powerful tagging system for organizing your media files:
 
 ### **Tag Registry Structure**
-Every `media_registry.json` automatically gets a corresponding `tag_registry.json` file in the same directory:
+Every `events_registry.json` automatically gets a corresponding `tag_registry.json` file in the same directory:
 
 ```json
 {
@@ -287,7 +287,7 @@ Simply double-click these files or run them from the command line.
 ### Registry Management
 1. **Current Registry**: The navbar displays the current registry path and media count
 2. **Switch Registry**: Click the "Switch" button in the navbar to change to a different registry
-3. **Registry Path**: Enter the full path to any `media_registry.json` file on your system
+3. **Registry Path**: Enter the full path to any `events_registry.json` file on your system
 4. **Auto Media Directory**: The tool automatically creates/uses a `media/` folder relative to the registry file
 
 ### Upload Mode
@@ -312,7 +312,7 @@ Simply double-click these files or run them from the command line.
 - **Quality**: High-quality output with optimized compression settings
 
 ### Registry System
-The `media_registry.json` file contains a simple list of media entries:
+The `events_registry.json` file contains a simple list of media entries:
 ```json
 [
   {"path": "media/filename.png"},
@@ -323,8 +323,8 @@ The `media_registry.json` file contains a simple list of media entries:
 This structure allows for easy expansion to include tags, metadata, and other properties in future iterations.
 
 ### Dynamic Registry Paths
-- **Registry Location**: The tool can work with `media_registry.json` files located anywhere on your system
-- **Media Directory**: For each registry file at `/path/to/media_registry.json`, the tool automatically uses `/path/to/media/` for storing processed files
+- **Registry Location**: The tool can work with `events_registry.json` files located anywhere on your system
+- **Media Directory**: For each registry file at `/path/to/events_registry.json`, the tool automatically uses `/path/to/events/` for storing processed files
 - **Session Persistence**: Your current registry selection is remembered across browser sessions
 - **Cross-Platform**: Registry paths work on Windows, macOS, and Linux
 
@@ -433,60 +433,4 @@ The test suite provides comprehensive coverage for:
 ## 🛠️ **Development**
 
 ### **Adding New Features:**
-1. **New File Format**: Update `config.py` with format definitions
-2. **New Processor**: Create new module in `media_processor/`
-3. **New API**: Add routes in `app.py`
-4. **New UI**: Create templates in `templates/`
-
-### **Writing Tests:**
-1. **Follow Naming**: Test files should be named `test_*.py`
-2. **Use Fixtures**: Leverage shared fixtures in `conftest.py`
-3. **Mock External Dependencies**: Use `pytest-mock` for external services
-4. **Test Edge Cases**: Include error scenarios and boundary conditions
-5. **Maintain Coverage**: Aim for >90% test coverage for new features
-
-### **Testing Best Practices:**
-- Write tests for all new functionality
-- Use descriptive test names and docstrings
-- Test both success and failure scenarios
-- Mock external dependencies (FFmpeg, file system)
-- Use temporary directories for file operations
-- Run tests before committing changes
-
-## 🐛 **Troubleshooting**
-
-### Common Issues
-
-**FFmpeg not found:**
-- Ensure FFmpeg is installed and in your system PATH
-- Restart your terminal/command prompt after installation
-
-**Video processing fails:**
-- Check that input video format is supported
-- Ensure sufficient disk space for processing
-- Verify FFmpeg installation with `ffmpeg -version`
-
-**Upload fails:**
-- Check file size (max 100MB)
-- Verify file format is supported
-- Ensure media directory has write permissions
-
-### Performance Tips
-- Large video files may take time to process
-- Consider processing videos in smaller batches
-- Monitor disk space during large uploads
-
-## 📄 **License**
-
-This project is open source and available under the MIT License.
-
-## 🤝 **Contributing**
-
-Feel free to submit issues, feature requests, or pull requests to improve the tool!
-
-### **Development Guidelines:**
-- Follow the modular architecture
-- Add type hints to new functions
-- Include docstrings for new classes and methods
-- Test new features thoroughly
-- Update documentation as needed
+1. **New File Format**: Update `config.py`

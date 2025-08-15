@@ -109,8 +109,8 @@ class TestAppRoutes:
         # Add test media to the temporary registry
         test_registry_file = os.path.join(temp_dir, "test_registry.json")
         test_data = [
-            {"path": "media/test1.png"},
-            {"path": "media/test2.mp4"}
+            {"path": "events/test1.png"},
+            {"path": "events/test2.mp4"}
         ]
         with open(test_registry_file, 'w') as f:
             json.dump(test_data, f)
@@ -123,7 +123,7 @@ class TestAppRoutes:
         assert response.status_code == 200
         
         data = json.loads(response.data)
-        assert data['path'] == 'media/test1.png'
+        assert data['path'] == 'events/test1.png'
     
     def test_media_info_api_invalid_index(self, client):
         """Test media info API with invalid index"""
@@ -189,23 +189,22 @@ class TestAppRoutes:
         assert 'error' in data
         assert 'Registry path cannot be empty' in data['error']
     
-    def test_serve_media(self, client, test_image_file, temp_dir):
+    def test_serve_media(self, client, temp_dir):
         """Test serving media files"""
-        # Create a test file in the media directory that corresponds to the test registry
-        test_media_dir = os.path.join(temp_dir, "media")
+        test_media_dir = os.path.join(temp_dir, "events")
         os.makedirs(test_media_dir, exist_ok=True)
         test_file = os.path.join(test_media_dir, 'test.jpg')
         with open(test_file, 'w') as f:
             f.write('test content')
         
-        response = client.get('/media/test.jpg')
+        response = client.get('/events/test.jpg')
         assert response.status_code == 200
         assert response.data == b'test content'
     
     def test_delete_media_api_success(self, client, temp_dir):
         """Test successful media deletion"""
         # Create a test file in the test media directory
-        test_media_dir = os.path.join(temp_dir, "media")
+        test_media_dir = os.path.join(temp_dir, "events")
         os.makedirs(test_media_dir, exist_ok=True)
         test_file = os.path.join(test_media_dir, "test_delete.jpg")
         with open(test_file, 'w') as f:

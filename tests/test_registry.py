@@ -14,7 +14,7 @@ class TestMediaRegistry:
     def test_init_default(self):
         """Test registry initialization with default file"""
         registry = MediaRegistry()
-        assert registry.registry_file == 'media_registry.json'
+        assert registry.registry_file == 'events_registry.json'
     
     def test_init_custom_file(self, temp_dir):
         """Test registry initialization with custom file"""
@@ -230,7 +230,7 @@ class TestMediaRegistry:
     def test_get_display_name_current_directory(self, temp_dir):
         """Test getting display name for current directory"""
         # Create registry in current directory
-        registry_file = "media_registry.json"
+        registry_file = "events_registry.json"
         registry = MediaRegistry(registry_file)
         display_name = registry.get_display_name()
         assert display_name == "Active Registry"
@@ -240,7 +240,7 @@ class TestMediaRegistry:
         # Create a subdirectory
         subdir = os.path.join(temp_dir, "test_subdir")
         os.makedirs(subdir, exist_ok=True)
-        registry_file = os.path.join(subdir, "media_registry.json")
+        registry_file = os.path.join(subdir, "events_registry.json")
         registry = MediaRegistry(registry_file)
         display_name = registry.get_display_name()
         assert display_name == "test_subdir"
@@ -249,7 +249,7 @@ class TestMediaRegistry:
         """Test that save creates directory if it doesn't exist"""
         # Create a nested directory structure
         nested_dir = os.path.join(temp_dir, "nested", "subdir")
-        registry_file = os.path.join(nested_dir, "media_registry.json")
+        registry_file = os.path.join(nested_dir, "events_registry.json")
         registry = MediaRegistry(registry_file)
         
         test_data = [{"path": "media/test.png"}]
@@ -332,7 +332,7 @@ class TestMediaRegistry:
     def test_save_registry_with_filename_only(self, temp_dir):
         """Test saving registry when registry_file is just a filename"""
         # Create registry with just a filename (no directory path)
-        registry = MediaRegistry("test_registry.json")
+        registry = MediaRegistry("events_registry.json")
         
         # Test data
         test_data = [{"path": "media/test.jpg"}]
@@ -342,8 +342,8 @@ class TestMediaRegistry:
         assert success is True
         
         # Verify the file was created
-        assert os.path.exists("test_registry.json")
+        assert os.path.exists("events_registry.json")
         
         # Clean up
-        if os.path.exists("test_registry.json"):
-            os.remove("test_registry.json")
+        if os.path.exists("events_registry.json"):
+            os.remove("events_registry.json")

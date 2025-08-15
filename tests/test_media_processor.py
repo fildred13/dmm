@@ -15,13 +15,13 @@ class TestMediaProcessor:
     def test_init_default(self):
         """Test processor initialization with default registry"""
         processor = MediaProcessor()
-        assert 'media' in processor.upload_folder
+        assert 'events' in processor.upload_folder
     
     def test_init_custom_registry(self, temp_dir):
         """Test processor initialization with custom registry"""
         custom_registry = os.path.join(temp_dir, "custom_registry.json")
         processor = MediaProcessor(custom_registry)
-        expected_media_folder = os.path.join(temp_dir, "media")
+        expected_media_folder = os.path.join(temp_dir, "events")
         assert processor.upload_folder == expected_media_folder
     
     def test_process_media_file_image_success(self, temp_dir):
@@ -40,9 +40,9 @@ class TestMediaProcessor:
         
         assert error is None
         # Use normalized path comparison
-        expected_path = "media/test.jpg"
+        expected_path = "events/test.jpg"
         assert relative_path == expected_path
-        assert os.path.exists(os.path.join(temp_dir, "media", "test.jpg"))
+        assert os.path.exists(os.path.join(temp_dir, "events", "test.jpg"))
     
     def test_process_media_file_image_format_conversion(self, temp_dir):
         """Test image processing with format conversion"""
@@ -60,9 +60,9 @@ class TestMediaProcessor:
         
         assert error is None
         # Use normalized path comparison
-        expected_path = "media/test.png"
+        expected_path = "events/test.png"
         assert relative_path == expected_path  # Should convert to PNG
-        assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
+        assert os.path.exists(os.path.join(temp_dir, "events", "test.png"))
     
     def test_process_media_file_static_gif_success(self, temp_dir):
         """Test successful static GIF processing (should become PNG)"""
@@ -80,9 +80,9 @@ class TestMediaProcessor:
         
         assert error is None
         # Use normalized path comparison
-        expected_path = "media/test.png"
+        expected_path = "events/test.png"
         assert relative_path == expected_path  # Should convert to PNG
-        assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
+        assert os.path.exists(os.path.join(temp_dir, "events", "test.png"))
     
     def test_process_media_file_animated_gif_success(self, temp_dir, mock_ffmpeg_probe, mock_ffmpeg_stream):
         """Test successful animated GIF processing (should become WEBM)"""
@@ -105,7 +105,7 @@ class TestMediaProcessor:
             
             assert error is None
             # Use normalized path comparison
-            expected_path = "media/test.webm"
+            expected_path = "events/test.webm"
             assert relative_path == expected_path  # Should convert to WEBM
             # Note: We don't check if the file exists because we're mocking FFmpeg
     
@@ -133,7 +133,7 @@ class TestMediaProcessor:
             
             assert error is None
             # Use normalized path comparison
-            expected_path = "media/test.webm"
+            expected_path = "events/test.webm"
             assert relative_path == expected_path  # Should convert to WEBM
             # Note: We don't check if the file exists because we're mocking FFmpeg
     
@@ -158,9 +158,9 @@ class TestMediaProcessor:
             
             assert error is None
             # Use normalized path comparison
-            expected_path = "media/test.png"
+            expected_path = "events/test.png"
             assert relative_path == expected_path  # Should convert to PNG
-            assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
+            assert os.path.exists(os.path.join(temp_dir, "events", "test.png"))
     
     def test_process_media_file_video_success(self, temp_dir, mock_ffmpeg_probe, mock_ffmpeg_stream):
         """Test successful video processing"""
@@ -177,7 +177,7 @@ class TestMediaProcessor:
         
         assert error is None
         # Use normalized path comparison
-        expected_path = "media/test.webm"
+        expected_path = "events/test.webm"
         assert relative_path == expected_path  # Should convert to WebM
         # Note: We don't check if the file exists because we're mocking FFmpeg
     
