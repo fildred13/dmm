@@ -17,20 +17,15 @@ class ImageProcessor:
         """Calculate new dimensions while maintaining aspect ratio"""
         aspect_ratio = width / height
         
-        if width > height:
-            # Landscape
-            new_width = min(width, MAX_WIDTH)
+        # Determine which max dimension to target based on aspect ratio
+        if aspect_ratio >= MAX_WIDTH / MAX_HEIGHT:
+            # Wider than target ratio - scale to max width
+            new_width = MAX_WIDTH
             new_height = int(new_width / aspect_ratio)
-            if new_height > MAX_HEIGHT:
-                new_height = MAX_HEIGHT
-                new_width = int(new_height * aspect_ratio)
         else:
-            # Portrait
-            new_height = min(height, MAX_HEIGHT)
+            # Taller than target ratio - scale to max height
+            new_height = MAX_HEIGHT
             new_width = int(new_height * aspect_ratio)
-            if new_width > MAX_WIDTH:
-                new_width = MAX_WIDTH
-                new_height = int(new_width / aspect_ratio)
         
         return new_width, new_height
     
@@ -55,8 +50,6 @@ class ImageProcessor:
                     resized_img.save(output_path, 'JPEG', quality=JPEG_QUALITY)
                 elif output_ext == '.png':
                     resized_img.save(output_path, 'PNG')
-                elif output_ext == '.gif':
-                    resized_img.save(output_path, 'GIF')
                 else:
                     resized_img.save(output_path)
                 

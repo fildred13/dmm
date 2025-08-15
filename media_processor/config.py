@@ -17,7 +17,7 @@ SUPPORTED_INPUT_FORMATS = {
     'video': ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv', '.wmv']
 }
 
-SUPPORTED_OUTPUT_FORMATS = ['.webm', '.mp4', '.png', '.gif', '.jpg']
+SUPPORTED_OUTPUT_FORMATS = ['.webm', '.mp4', '.png', '.jpg']
 
 # Media Processing Settings
 MAX_WIDTH = 576

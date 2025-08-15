@@ -5,6 +5,7 @@ Handles file type detection, path operations, and file validation
 
 from pathlib import Path
 from typing import Optional, Tuple
+from PIL import Image
 from .config import SUPPORTED_INPUT_FORMATS, SUPPORTED_OUTPUT_FORMATS
 
 
@@ -12,9 +13,29 @@ class FileUtils:
     """Utility functions for file operations"""
     
     @staticmethod
-    def get_file_type(filename: str) -> Optional[str]:
-        """Determine if file is image or video based on extension"""
+    def is_animated_gif(file_path: str) -> bool:
+        """Check if a GIF file is animated"""
+        try:
+            with Image.open(file_path) as img:
+                # Check if the image has multiple frames
+                return hasattr(img, 'n_frames') and img.n_frames > 1
+        except Exception:
+            return False
+    
+    @staticmethod
+    def get_file_type(filename: str, file_path: str = None) -> Optional[str]:
+        """Determine if file is image or video based on extension and content"""
         ext = Path(filename).suffix.lower()
+        
+        # Special handling for GIF files
+        if ext == '.gif' and file_path:
+            # Check if it's an animated GIF
+            if FileUtils.is_animated_gif(file_path):
+                return 'video'  # Animated GIFs are treated as videos
+            else:
+                return 'image'  # Static GIFs are treated as images
+        
+        # Regular file type detection
         if ext in SUPPORTED_INPUT_FORMATS['image']:
             return 'image'
         elif ext in SUPPORTED_INPUT_FORMATS['video']:
@@ -27,9 +48,16 @@ class FileUtils:
         return FileUtils.get_file_type(filename) is not None
     
     @staticmethod
-    def get_output_format(filename: str, file_type: str) -> str:
+    def get_output_format(filename: str, file_type: str, file_path: str = None) -> str:
         """Determine the appropriate output format for a file"""
         input_ext = Path(filename).suffix.lower()
+        
+        # Special handling for GIF files
+        if input_ext == '.gif':
+            if file_path and FileUtils.is_animated_gif(file_path):
+                return '.webm'  # Animated GIFs become WEBM videos
+            else:
+                return '.png'   # Static GIFs become PNG images
         
         # If input format is already supported, keep it
         if input_ext in SUPPORTED_OUTPUT_FORMATS:

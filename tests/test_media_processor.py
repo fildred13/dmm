@@ -65,6 +65,53 @@ class TestMediaProcessor:
         assert relative_path == expected_path  # Should convert to PNG
         assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
     
+    def test_process_media_file_static_gif_success(self, temp_dir):
+        """Test successful static GIF processing (should become PNG)"""
+        # Create test static GIF
+        input_path = os.path.join(temp_dir, "test.gif")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(input_path)
+        
+        # Create upload folder
+        upload_folder = os.path.join(temp_dir, "media")
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        processor = MediaProcessor(upload_folder)
+        relative_path, error = processor.process_media_file(input_path)
+        
+        assert error is None
+        # Use normalized path comparison
+        expected_path = f"{upload_folder}/test.png".replace('\\', '/')
+        assert relative_path == expected_path  # Should convert to PNG
+        assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
+    
+    def test_process_media_file_animated_gif_success(self, temp_dir, mock_ffmpeg_probe, mock_ffmpeg_stream):
+        """Test successful animated GIF processing (should become WEBM)"""
+        # Create test animated GIF (simulated)
+        input_path = os.path.join(temp_dir, "test.gif")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(input_path)
+        
+        # Create upload folder
+        upload_folder = os.path.join(temp_dir, "media")
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Mock the animated GIF detection
+        from media_processor.file_utils import FileUtils
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(FileUtils, 'is_animated_gif', lambda x: True)
+            
+            processor = MediaProcessor(upload_folder)
+            relative_path, error = processor.process_media_file(input_path)
+            
+            assert error is None
+            # Use normalized path comparison
+            expected_path = f"{upload_folder}/test.webm".replace('\\', '/')
+            assert relative_path == expected_path  # Should convert to WEBM
+            # Note: We don't check if the file exists because we're mocking FFmpeg
+    
     def test_process_media_file_video_success(self, temp_dir, mock_ffmpeg_probe, mock_ffmpeg_stream):
         """Test successful video processing"""
         # Create test video file

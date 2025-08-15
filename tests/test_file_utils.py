@@ -3,17 +3,27 @@ Tests for file utilities module
 """
 
 import pytest
+import os
 from media_processor.file_utils import FileUtils
 
 
 class TestFileUtils:
     """Test file utility functions"""
     
-    def test_get_file_type_image(self):
+    def test_get_file_type_image(self, temp_dir):
         """Test file type detection for images"""
+        # Create a static GIF for testing
+        from PIL import Image
+        import numpy as np
+        
+        static_gif_path = os.path.join(temp_dir, "static.gif")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(static_gif_path)
+        
         assert FileUtils.get_file_type("test.jpg") == "image"
         assert FileUtils.get_file_type("test.png") == "image"
-        assert FileUtils.get_file_type("test.gif") == "image"
+        assert FileUtils.get_file_type("test.gif", static_gif_path) == "image"  # Static GIF
         assert FileUtils.get_file_type("test.webp") == "image"
         assert FileUtils.get_file_type("test.bmp") == "image"
         assert FileUtils.get_file_type("test.tiff") == "image"
@@ -63,6 +73,43 @@ class TestFileUtils:
         assert FileUtils.get_output_format("test.tiff", "image") == ".png"
         assert FileUtils.get_output_format("test.avi", "video") == ".mp4"
         assert FileUtils.get_output_format("test.mov", "video") == ".mp4"
+    
+    def test_get_output_format_gif_files(self, temp_dir):
+        """Test output format for GIF files"""
+        # Create a static GIF for testing
+        from PIL import Image
+        import numpy as np
+        
+        static_gif_path = os.path.join(temp_dir, "static.gif")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(static_gif_path)
+        
+        # Create an animated GIF for testing (simulated)
+        animated_gif_path = os.path.join(temp_dir, "animated.gif")
+        # For testing, we'll create a simple GIF and mock it as animated
+        img.save(animated_gif_path)
+        
+        # Test static GIF (should become PNG)
+        assert FileUtils.get_output_format("test.gif", "image", static_gif_path) == ".png"
+        
+        # Test animated GIF (should become WEBM)
+        # We need to mock the is_animated_gif function for this test
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(FileUtils, 'is_animated_gif', lambda x: True)
+            assert FileUtils.get_output_format("test.gif", "video", animated_gif_path) == ".webm"
+    
+    def test_is_animated_gif_static(self, temp_dir):
+        """Test animated GIF detection for static GIFs"""
+        from PIL import Image
+        import numpy as np
+        
+        static_gif_path = os.path.join(temp_dir, "static.gif")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(static_gif_path)
+        
+        assert FileUtils.is_animated_gif(static_gif_path) is False
     
     def test_create_output_filename(self):
         """Test output filename creation"""
