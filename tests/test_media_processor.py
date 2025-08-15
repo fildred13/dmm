@@ -112,6 +112,61 @@ class TestMediaProcessor:
             assert relative_path == expected_path  # Should convert to WEBM
             # Note: We don't check if the file exists because we're mocking FFmpeg
     
+    def test_process_media_file_animated_webp_success(self, temp_dir, mock_ffmpeg_probe, mock_ffmpeg_stream):
+        """Test successful animated WebP processing (should become WEBM)"""
+        # Create test animated WebP (simulated)
+        input_path = os.path.join(temp_dir, "test.webp")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(input_path)
+        
+        # Create upload folder
+        upload_folder = os.path.join(temp_dir, "media")
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Mock the animated WebP detection and Wand conversion
+        from media_processor.file_utils import FileUtils
+        from media_processor.video_processor import VideoProcessor
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(FileUtils, 'is_animated_webp', lambda x: True)
+            # Mock the Wand conversion to return success
+            m.setattr(VideoProcessor, 'convert_webp_to_webm', lambda x, y: True)
+            
+            processor = MediaProcessor(upload_folder)
+            relative_path, error = processor.process_media_file(input_path)
+            
+            assert error is None
+            # Use normalized path comparison
+            expected_path = f"{upload_folder}/test.webm".replace('\\', '/')
+            assert relative_path == expected_path  # Should convert to WEBM
+            # Note: We don't check if the file exists because we're mocking FFmpeg
+    
+    def test_process_media_file_static_webp_success(self, temp_dir):
+        """Test successful static WebP processing (should become PNG)"""
+        # Create test static WebP
+        input_path = os.path.join(temp_dir, "test.webp")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(input_path)
+        
+        # Create upload folder
+        upload_folder = os.path.join(temp_dir, "media")
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Mock the static WebP detection (both animation methods return False)
+        from media_processor.file_utils import FileUtils
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(FileUtils, 'is_animated_webp', lambda x: False)
+            
+            processor = MediaProcessor(upload_folder)
+            relative_path, error = processor.process_media_file(input_path)
+            
+            assert error is None
+            # Use normalized path comparison
+            expected_path = f"{upload_folder}/test.png".replace('\\', '/')
+            assert relative_path == expected_path  # Should convert to PNG
+            assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
+    
     def test_process_media_file_video_success(self, temp_dir, mock_ffmpeg_probe, mock_ffmpeg_stream):
         """Test successful video processing"""
         # Create test video file

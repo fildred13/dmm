@@ -52,8 +52,14 @@ dmm/
 - **Videos**: MP4, AVI, MOV, MKV, WEBM, FLV, WMV
 
 **Output Formats:**
-- **Images**: PNG, GIF, JPG
+- **Images**: PNG, JPG
 - **Videos**: WEBM, MP4
+
+**Special Handling:**
+- **Animated GIFs**: Converted to animated WEBM videos
+- **Animated WebPs**: Converted to animated WEBM videos
+- **Static GIFs**: Converted to PNG images
+- **Static WebPs**: Converted to PNG images
 
 ## 🏗️ **Modular Architecture**
 
@@ -94,6 +100,7 @@ dmm/
 ### Prerequisites
 - Python 3.8 or higher
 - FFmpeg (for video processing)
+- ImageMagick (for animated WebP processing) - automatically installed via Wand Python package
 
 ### FFmpeg Installation
 
@@ -180,6 +187,7 @@ Simply double-click these files or run them from the command line.
 ### Media Processing
 - **Image Processing**: Uses Pillow (PIL) for resizing and format conversion
 - **Video Processing**: Uses FFmpeg for video resizing and format conversion
+- **Animated WebP Processing**: Uses Wand (ImageMagick) for reliable animated WebP to WebM conversion
 - **Aspect Ratio**: Maintains original aspect ratio while fitting within max dimensions
 - **Quality**: High-quality output with optimized compression settings
 

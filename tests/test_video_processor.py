@@ -4,6 +4,7 @@ Tests for video processor module
 
 import pytest
 import os
+from unittest.mock import MagicMock
 from media_processor.video_processor import VideoProcessor
 
 
@@ -44,6 +45,22 @@ class TestVideoProcessor:
         width, height = VideoProcessor.calculate_dimensions(100, 101)
         assert width % 2 == 0
         assert height % 2 == 0
+    
+    def test_calculate_dimensions_edge_cases(self):
+        """Test dimension calculation with edge cases"""
+        # Test zero dimensions (should handle gracefully)
+        width, height = VideoProcessor.calculate_dimensions(0, 100)
+        assert width == 576 and height == 576  # Should default to square
+        
+        width, height = VideoProcessor.calculate_dimensions(100, 0)
+        assert width == 576 and height == 576  # Should default to square
+        
+        width, height = VideoProcessor.calculate_dimensions(0, 0)
+        assert width == 576 and height == 576  # Should default to square
+        
+        # Test negative dimensions (should handle gracefully)
+        width, height = VideoProcessor.calculate_dimensions(-100, 100)
+        assert width == 576 and height == 576  # Should default to square
     
     def test_resize_video_webm(self, temp_dir, mock_ffmpeg_probe, mock_ffmpeg_stream):
         """Test video resizing to WebM format"""
@@ -172,3 +189,52 @@ class TestVideoProcessor:
         input_path = os.path.join(temp_dir, "nonexistent.mp4")
         info = VideoProcessor.get_video_info(input_path)
         assert info == {}
+    
+    def test_convert_webp_to_webm_success(self, temp_dir):
+        """Test successful WebP to WebM conversion using Wand"""
+        input_path = os.path.join(temp_dir, "test.webp")
+        output_path = os.path.join(temp_dir, "test.webm")
+        
+        # Create a dummy WebP file
+        with open(input_path, 'w') as f:
+            f.write("dummy webp content")
+        
+        # Mock the entire Wand conversion process
+        with pytest.MonkeyPatch().context() as m:
+            # Mock the WandImage class to return a context manager
+            mock_context = MagicMock()
+            mock_context.coalesce = MagicMock()
+            mock_context.save = MagicMock()
+            # Mock the sequence property to simulate an animated WebP
+            mock_context.sequence = [MagicMock(), MagicMock(), MagicMock()]  # 3 frames
+            
+            mock_wand_class = MagicMock()
+            mock_wand_class.return_value.__enter__ = MagicMock(return_value=mock_context)
+            mock_wand_class.return_value.__exit__ = MagicMock(return_value=None)
+            
+            m.setattr('media_processor.video_processor.WandImage', mock_wand_class)
+            m.setattr('media_processor.video_processor.WAND_AVAILABLE', True)
+            
+            result = VideoProcessor.convert_webp_to_webm(input_path, output_path)
+            
+            assert result is True
+            mock_wand_class.assert_called_once_with(filename=input_path)
+            mock_context.coalesce.assert_called_once()
+            mock_context.save.assert_called_once_with(filename=output_path)
+    
+    def test_convert_webp_to_webm_wand_unavailable(self, temp_dir):
+        """Test WebP to WebM conversion when Wand is not available"""
+        input_path = os.path.join(temp_dir, "test.webp")
+        output_path = os.path.join(temp_dir, "test.webm")
+        
+        # Create a dummy WebP file
+        with open(input_path, 'w') as f:
+            f.write("dummy webp content")
+        
+        # Mock Wand as unavailable
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr('media_processor.video_processor.WAND_AVAILABLE', False)
+            
+            result = VideoProcessor.convert_webp_to_webm(input_path, output_path)
+            
+            assert result is False

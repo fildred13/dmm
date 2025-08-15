@@ -28,6 +28,30 @@ class TestFileUtils:
         assert FileUtils.get_file_type("test.bmp") == "image"
         assert FileUtils.get_file_type("test.tiff") == "image"
     
+    def test_get_file_type_webp_files(self, temp_dir):
+        """Test file type detection for WebP files"""
+        # Create a static WebP for testing
+        from PIL import Image
+        import numpy as np
+        
+        static_webp_path = os.path.join(temp_dir, "static.webp")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(static_webp_path)
+        
+        # Create an animated WebP for testing (simulated)
+        animated_webp_path = os.path.join(temp_dir, "animated.webp")
+        img.save(animated_webp_path)
+        
+        # Test static WebP (should be detected as image)
+        assert FileUtils.get_file_type("test.webp", static_webp_path) == "image"
+        
+        # Test animated WebP (should be detected as video)
+        # We need to mock the is_animated_webp function for this test
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(FileUtils, 'is_animated_webp', lambda x: True)
+            assert FileUtils.get_file_type("test.webp", animated_webp_path) == "video"
+    
     def test_get_file_type_video(self):
         """Test file type detection for videos"""
         assert FileUtils.get_file_type("test.mp4") == "video"
@@ -110,6 +134,43 @@ class TestFileUtils:
         img.save(static_gif_path)
         
         assert FileUtils.is_animated_gif(static_gif_path) is False
+    
+    def test_get_output_format_webp_files(self, temp_dir):
+        """Test output format for WebP files"""
+        # Create a static WebP for testing
+        from PIL import Image
+        import numpy as np
+        
+        static_webp_path = os.path.join(temp_dir, "static.webp")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(static_webp_path)
+        
+        # Create an animated WebP for testing (simulated)
+        animated_webp_path = os.path.join(temp_dir, "animated.webp")
+        # For testing, we'll create a simple WebP and mock it as animated
+        img.save(animated_webp_path)
+        
+        # Test static WebP (should become PNG)
+        assert FileUtils.get_output_format("test.webp", "image", static_webp_path) == ".png"
+        
+        # Test animated WebP (should become WEBM)
+        # We need to mock the is_animated_webp function for this test
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(FileUtils, 'is_animated_webp', lambda x: True)
+            assert FileUtils.get_output_format("test.webp", "video", animated_webp_path) == ".webm"
+    
+    def test_is_animated_webp_static(self, temp_dir):
+        """Test animated WebP detection for static WebPs"""
+        from PIL import Image
+        import numpy as np
+        
+        static_webp_path = os.path.join(temp_dir, "static.webp")
+        img_array = np.random.randint(0, 255, (100, 150, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        img.save(static_webp_path)
+        
+        assert FileUtils.is_animated_webp(static_webp_path) is False
     
     def test_create_output_filename(self):
         """Test output filename creation"""

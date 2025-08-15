@@ -23,6 +23,16 @@ class FileUtils:
             return False
     
     @staticmethod
+    def is_animated_webp(file_path: str) -> bool:
+        """Check if a WebP file is animated"""
+        try:
+            with Image.open(file_path) as img:
+                # Use PIL's built-in is_animated property
+                return img.is_animated
+        except Exception:
+            return False
+    
+    @staticmethod
     def get_file_type(filename: str, file_path: str = None) -> Optional[str]:
         """Determine if file is image or video based on extension and content"""
         ext = Path(filename).suffix.lower()
@@ -34,6 +44,14 @@ class FileUtils:
                 return 'video'  # Animated GIFs are treated as videos
             else:
                 return 'image'  # Static GIFs are treated as images
+        
+        # Special handling for WebP files
+        if ext == '.webp' and file_path:
+            # Check if it's an animated WebP
+            if FileUtils.is_animated_webp(file_path):
+                return 'video'  # Animated WebPs are treated as videos
+            else:
+                return 'image'  # Static WebPs are treated as images
         
         # Regular file type detection
         if ext in SUPPORTED_INPUT_FORMATS['image']:
@@ -58,6 +76,13 @@ class FileUtils:
                 return '.webm'  # Animated GIFs become WEBM videos
             else:
                 return '.png'   # Static GIFs become PNG images
+        
+        # Special handling for WebP files
+        if input_ext == '.webp':
+            if file_path and FileUtils.is_animated_webp(file_path):
+                return '.webm'  # Animated WebPs become WEBM videos
+            else:
+                return '.png'   # Static WebPs become PNG images
         
         # If input format is already supported, keep it
         if input_ext in SUPPORTED_OUTPUT_FORMATS:
