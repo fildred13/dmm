@@ -183,8 +183,8 @@ class TestMediaProcessor:
         
         assert error is None
         # Use normalized path comparison
-        expected_path = f"{upload_folder}/test.mp4".replace('\\', '/')
-        assert relative_path == expected_path  # Should convert to MP4
+        expected_path = f"{upload_folder}/test.webm".replace('\\', '/')
+        assert relative_path == expected_path  # Should convert to WebM
         # Note: We don't check if the file exists because we're mocking FFmpeg
     
     def test_process_media_file_unsupported_format(self, temp_dir):

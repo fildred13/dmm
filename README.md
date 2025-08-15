@@ -53,7 +53,7 @@ dmm/
 
 **Output Formats:**
 - **Images**: PNG, JPG
-- **Videos**: WEBM, MP4
+- **Videos**: WEBM (all videos are converted to WebM format)
 
 **Special Handling:**
 - **Animated GIFs**: Converted to animated WEBM videos
@@ -186,7 +186,7 @@ Simply double-click these files or run them from the command line.
 
 ### Media Processing
 - **Image Processing**: Uses Pillow (PIL) for resizing and format conversion
-- **Video Processing**: Uses FFmpeg for video resizing and format conversion
+- **Video Processing**: Uses FFmpeg for video resizing and format conversion (all videos converted to WebM)
 - **Animated WebP Processing**: Uses Wand (ImageMagick) for reliable animated WebP to WebM conversion
 - **Aspect Ratio**: Maintains original aspect ratio while fitting within max dimensions
 - **Quality**: High-quality output with optimized compression settings

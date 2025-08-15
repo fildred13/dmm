@@ -92,7 +92,7 @@ class FileUtils:
         if file_type == 'image':
             return '.png'
         else:  # video
-            return '.mp4'
+            return '.webm'  # All videos are converted to WebM
     
     @staticmethod
     def create_output_filename(input_filename: str, output_ext: str) -> str:

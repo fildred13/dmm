@@ -160,30 +160,13 @@ class VideoProcessor:
             # Calculate new dimensions
             new_width, new_height = VideoProcessor.calculate_dimensions(width, height)
             
-            # Convert video
-            output_ext = Path(output_path).suffix.lower()
-            if output_ext == '.webm':
-                stream = ffmpeg.input(video_path)
-                stream = ffmpeg.output(stream, output_path, 
-                                     vcodec='libvpx-vp9', 
-                                     acodec='libopus',
-                                     vf=f'scale={new_width}:{new_height}',
-                                     crf=VIDEO_CRF_WEBM)
-            elif output_ext == '.mp4':
-                stream = ffmpeg.input(video_path)
-                stream = ffmpeg.output(stream, output_path,
-                                     vcodec='libx264',
-                                     acodec='aac',
-                                     vf=f'scale={new_width}:{new_height}',
-                                     crf=VIDEO_CRF_MP4)
-            else:
-                # Default to MP4
-                stream = ffmpeg.input(video_path)
-                stream = ffmpeg.output(stream, output_path,
-                                     vcodec='libx264',
-                                     acodec='aac',
-                                     vf=f'scale={new_width}:{new_height}',
-                                     crf=VIDEO_CRF_MP4)
+            # Convert all videos to WebM format
+            stream = ffmpeg.input(video_path)
+            stream = ffmpeg.output(stream, output_path, 
+                                 vcodec='libvpx-vp9', 
+                                 acodec='libopus',
+                                 vf=f'scale={new_width}:{new_height}',
+                                 crf=VIDEO_CRF_WEBM)
             
             ffmpeg.run(stream, overwrite_output=True)
             return True

@@ -88,15 +88,15 @@ class TestFileUtils:
         """Test output format for already supported formats"""
         assert FileUtils.get_output_format("test.jpg", "image") == ".jpg"
         assert FileUtils.get_output_format("test.png", "image") == ".png"
-        assert FileUtils.get_output_format("test.mp4", "video") == ".mp4"
+        assert FileUtils.get_output_format("test.mp4", "video") == ".webm"
         assert FileUtils.get_output_format("test.webm", "video") == ".webm"
     
     def test_get_output_format_unsupported_input(self):
         """Test output format for unsupported input formats"""
         assert FileUtils.get_output_format("test.bmp", "image") == ".png"
         assert FileUtils.get_output_format("test.tiff", "image") == ".png"
-        assert FileUtils.get_output_format("test.avi", "video") == ".mp4"
-        assert FileUtils.get_output_format("test.mov", "video") == ".mp4"
+        assert FileUtils.get_output_format("test.avi", "video") == ".webm"
+        assert FileUtils.get_output_format("test.mov", "video") == ".webm"
     
     def test_get_output_format_gif_files(self, temp_dir):
         """Test output format for GIF files"""
@@ -176,7 +176,7 @@ class TestFileUtils:
         """Test output filename creation"""
         assert FileUtils.create_output_filename("test.jpg", ".png") == "test.png"
         assert FileUtils.create_output_filename("image.bmp", ".jpg") == "image.jpg"
-        assert FileUtils.create_output_filename("video.avi", ".mp4") == "video.mp4"
+        assert FileUtils.create_output_filename("video.avi", ".webm") == "video.webm"
         assert FileUtils.create_output_filename("file", ".png") == "file.png"
     
     def test_normalize_path(self):

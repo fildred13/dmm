@@ -60,7 +60,7 @@ class TestConfig:
         """Test supported output formats configuration"""
         assert isinstance(SUPPORTED_OUTPUT_FORMATS, list)
         assert '.webm' in SUPPORTED_OUTPUT_FORMATS
-        assert '.mp4' in SUPPORTED_OUTPUT_FORMATS
+        assert '.mp4' not in SUPPORTED_OUTPUT_FORMATS  # MP4 no longer supported as output
         assert '.png' in SUPPORTED_OUTPUT_FORMATS
         assert '.jpg' in SUPPORTED_OUTPUT_FORMATS
         # Note: .gif is no longer a supported output format
