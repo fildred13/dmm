@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Media{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        background: rgba(102, 126, 234, 0.05);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 2rem;
+    }
+
+    .upload-area:hover {
+        background: rgba(102, 126, 234, 0.1);
+        border-color: #764ba2;
+    }
+
+    .upload-area.dragover {
+        background: rgba(102, 126, 234, 0.2);
+        border-color: #764ba2;
+        transform: scale(1.02);
+    }
+
+    .upload-icon {
+        font-size: 4rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .upload-list {
+        margin-top: 2rem;
+    }
+
+    .upload-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid #667eea;
+    }
+
+    .upload-item.success {
+        border-left-color: #28a745;
+    }
+
+    .upload-item.error {
+        border-left-color: #dc3545;
+    }
+
+    .upload-item.processing {
+        border-left-color: #ffc107;
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .file-name {
+        font-weight: 500;
+    }
+
+    .file-size {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .status {
+        font-weight: 500;
+    }
+
+    .status.processing {
+        color: #ffc107;
+    }
+
+    .status.success {
+        color: #28a745;
+    }
+
+    .status.error {
+        color: #dc3545;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .supported-formats {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .format-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .format-tag {
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="text-align: center; margin-bottom: 2rem; color: #667eea;">Upload Media</h1>
+    
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📁</div>
+        <h3 style="margin-bottom: 1rem; color: #667eea;">Drag & Drop Files Here</h3>
+        <p style="color: #666; margin-bottom: 1.5rem;">
+            Or click to select files from your computer
+        </p>
+        <input type="file" id="fileInput" class="file-input" multiple accept="image/*,video/*">
+        <button class="btn" onclick="document.getElementById('fileInput').click()">
+            Choose Files
+        </button>
+    </div>
+
+    <div class="supported-formats">
+        <h4 style="margin-bottom: 0.5rem;">Supported Formats:</h4>
+        <div class="format-list">
+            <span class="format-tag">Images: JPG, PNG, GIF, BMP, TIFF, WEBP</span>
+            <span class="format-tag">Videos: MP4, AVI, MOV, MKV, WEBM, FLV, WMV</span>
+        </div>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+            Files will be automatically resized to max 576×1024 and converted to supported output formats.
+        </p>
+    </div>
+
+    <div id="uploadList" class="upload-list"></div>
+</div>
+
+<div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Processing files...</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const uploadList = document.getElementById('uploadList');
+const loading = document.getElementById('loading');
+
+// Drag and drop handlers
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
+});
+
+// File input handler
+fileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    handleFiles(files);
+});
+
+function handleFiles(files) {
+    if (files.length === 0) return;
+    
+    // Clear previous uploads
+    uploadList.innerHTML = '';
+    loading.style.display = 'block';
+    
+    // Process each file
+    files.forEach((file, index) => {
+        const uploadItem = createUploadItem(file, index);
+        uploadList.appendChild(uploadItem);
+        
+        // Upload file
+        uploadFile(file, uploadItem);
+    });
+}
+
+function createUploadItem(file, index) {
+    const item = document.createElement('div');
+    item.className = 'upload-item processing';
+    item.innerHTML = `
+        <div class="file-info">
+            <div>
+                <div class="file-name">${file.name}</div>
+                <div class="file-size">${formatFileSize(file.size)}</div>
+            </div>
+        </div>
+        <div class="status processing">Processing...</div>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+    `;
+    return item;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function uploadFile(file, uploadItem) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            uploadItem.classList.remove('processing');
+            uploadItem.classList.add('success');
+            uploadItem.querySelector('.status').textContent = 'Success!';
+            uploadItem.querySelector('.status').className = 'status success';
+            uploadItem.querySelector('.progress-fill').style.width = '100%';
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        uploadItem.classList.remove('processing');
+        uploadItem.classList.add('error');
+        uploadItem.querySelector('.status').textContent = 'Error: ' + error.message;
+        uploadItem.querySelector('.status').className = 'status error';
+    }
+    
+    // Hide loading when all files are processed
+    const processingItems = uploadList.querySelectorAll('.upload-item.processing');
+    if (processingItems.length === 0) {
+        loading.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

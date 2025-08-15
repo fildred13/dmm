@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Media Management Tool - Home{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="text-align: center; margin-bottom: 2rem; color: #667eea;">Welcome to Media Manager</h1>
+    
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <p style="font-size: 1.2rem; color: #666; margin-bottom: 2rem;">
+            Your comprehensive media management and pipelining tool for game development
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        <div class="card" style="text-align: center; background: rgba(102, 126, 234, 0.1);">
+            <h3 style="color: #667eea; margin-bottom: 1rem;">📤 Upload Media</h3>
+            <p style="margin-bottom: 1.5rem; color: #666;">
+                Drag and drop your media files to automatically resize and convert them to supported formats.
+            </p>
+            <a href="/upload" class="btn">Go to Upload</a>
+        </div>
+
+        <div class="card" style="text-align: center; background: rgba(118, 75, 162, 0.1);">
+            <h3 style="color: #764ba2; margin-bottom: 1rem;">👁️ Preview Media</h3>
+            <p style="margin-bottom: 1.5rem; color: #666;">
+                Browse through your ingested media files with a beautiful preview interface.
+            </p>
+            <a href="/preview" class="btn">Go to Preview</a>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 2rem; background: rgba(255, 255, 255, 0.8);">
+        <h3 style="color: #333; margin-bottom: 1rem;">✨ Features</h3>
+        <ul style="list-style: none; padding: 0;">
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #eee;">🎯 Automatic resizing to max 576×1024 while preserving aspect ratio</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #eee;">🔄 Format conversion to supported types (.webm, .mp4, .png, .gif, .jpg)</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #eee;">📁 Centralized media registry with JSON storage</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #eee;">🎨 Beautiful, responsive web interface</li>
+            <li style="padding: 0.5rem 0;">🚀 Batch upload support for multiple files</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
