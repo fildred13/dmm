@@ -10,8 +10,9 @@ from media_processor.config import (
     REGISTRY_FILE,
     SUPPORTED_INPUT_FORMATS,
     SUPPORTED_OUTPUT_FORMATS,
-    MAX_WIDTH,
-    MAX_HEIGHT,
+    LANDSCAPE_TARGET_WIDTH,
+    PORTRAIT_TARGET_HEIGHT,
+    SQUARE_TARGET_SIZE,
     VIDEO_CRF_MP4,
     VIDEO_CRF_WEBM,
     JPEG_QUALITY
@@ -66,11 +67,13 @@ class TestConfig:
         # Animated GIFs become .webm, static GIFs become .png
     
     def test_max_dimensions(self):
-        """Test maximum dimensions configuration"""
-        assert MAX_WIDTH == 576
-        assert MAX_HEIGHT == 1024
-        assert isinstance(MAX_WIDTH, int)
-        assert isinstance(MAX_HEIGHT, int)
+        """Test target dimensions configuration"""
+        assert LANDSCAPE_TARGET_WIDTH == 1024
+        assert PORTRAIT_TARGET_HEIGHT == 576
+        assert SQUARE_TARGET_SIZE == 576
+        assert isinstance(LANDSCAPE_TARGET_WIDTH, int)
+        assert isinstance(PORTRAIT_TARGET_HEIGHT, int)
+        assert isinstance(SQUARE_TARGET_SIZE, int)
     
     def test_video_quality_settings(self):
         """Test video quality settings"""

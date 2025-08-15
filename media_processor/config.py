@@ -20,8 +20,12 @@ SUPPORTED_INPUT_FORMATS = {
 SUPPORTED_OUTPUT_FORMATS = ['.webm', '.mp4', '.png', '.jpg']
 
 # Media Processing Settings
-MAX_WIDTH = 576
-MAX_HEIGHT = 1024
+# Landscape media: scale to width = 1024, height calculated proportionally
+# Portrait media: scale to height = 576, width calculated proportionally
+# Square media: scale to width = height = 576
+LANDSCAPE_TARGET_WIDTH = 1024
+PORTRAIT_TARGET_HEIGHT = 576
+SQUARE_TARGET_SIZE = 576
 
 # Video Processing Settings
 VIDEO_CRF_MP4 = 23

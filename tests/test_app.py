@@ -5,9 +5,11 @@ Tests for Flask application
 import pytest
 import json
 import os
+from unittest.mock import patch
 from PIL import Image
 import numpy as np
 from app import app
+from media_processor.registry import MediaRegistry
 
 
 @pytest.fixture
@@ -145,6 +147,33 @@ class TestAppRoutes:
         response = client.get('/media/test.jpg')
         assert response.status_code == 200
         assert response.data == b'test content'
+    
+    def test_delete_media_api_success(self, client, temp_dir):
+        """Test successful media deletion"""
+        # Create a test file in the test media directory
+        test_media_dir = os.path.join(temp_dir, "test_media")
+        test_file = os.path.join(test_media_dir, "test_delete.jpg")
+        with open(test_file, 'w') as f:
+            f.write("test content")
+        
+        # Add to registry (the client fixture already sets up a test registry)
+        import app as app_module
+        app_module.registry.add_media("test_delete.jpg")
+        
+        # Test deletion
+        response = client.delete('/api/media/0')
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'message' in data
+        assert 'deleted successfully' in data['message']
+    
+    def test_delete_media_api_invalid_index(self, client):
+        """Test media deletion with invalid index"""
+        response = client.delete('/api/media/999')
+        assert response.status_code == 404
+        data = json.loads(response.data)
+        assert 'error' in data
+        assert 'Index out of range' in data['error']
 
 
 class TestUploadAPI:

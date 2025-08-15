@@ -77,7 +77,7 @@ class TestMediaRegistry:
         assert result is False
     
     def test_add_media(self, temp_dir):
-        """Test adding media to registry"""
+        """Test adding media to registry (most recent first)"""
         registry_file = os.path.join(temp_dir, "test_add.json")
         registry = MediaRegistry(registry_file)
         
@@ -89,11 +89,11 @@ class TestMediaRegistry:
         result2 = registry.add_media("media/test2.mp4")
         assert result2 is True
         
-        # Verify registry content
+        # Verify registry content (most recent first)
         loaded_data = registry.load()
         assert len(loaded_data) == 2
-        assert loaded_data[0]["path"] == "media/test1.png"
-        assert loaded_data[1]["path"] == "media/test2.mp4"
+        assert loaded_data[0]["path"] == "media/test2.mp4"  # Most recent
+        assert loaded_data[1]["path"] == "media/test1.png"  # Older
     
     def test_get_all_media(self, sample_registry_file):
         """Test getting all media entries"""
@@ -153,3 +153,55 @@ class TestMediaRegistry:
         # Verify registry is empty
         assert registry.get_media_count() == 0
         assert registry.load() == []
+    
+    def test_remove_media_by_index(self, temp_dir):
+        """Test removing media by index"""
+        registry_file = os.path.join(temp_dir, "test_remove.json")
+        registry = MediaRegistry(registry_file)
+        
+        # Add test entries
+        registry.add_media("media/test1.jpg")
+        registry.add_media("media/test2.png")
+        registry.add_media("media/test3.webm")
+        
+        # Remove middle entry
+        result = registry.remove_media_by_index(1)
+        assert result is True
+        
+        # Check remaining entries
+        remaining = registry.get_all_media()
+        assert len(remaining) == 2
+        assert remaining[0]['path'] == "media/test3.webm"  # Most recent
+        assert remaining[1]['path'] == "media/test1.jpg"   # Oldest
+    
+    def test_remove_media_by_index_invalid(self, temp_dir):
+        """Test removing media with invalid index"""
+        registry_file = os.path.join(temp_dir, "test_remove_invalid.json")
+        registry = MediaRegistry(registry_file)
+        
+        # Try to remove from empty registry
+        result = registry.remove_media_by_index(0)
+        assert result is False
+        
+        # Add one entry and try invalid index
+        registry.add_media("media/test1.jpg")
+        result = registry.remove_media_by_index(5)
+        assert result is False
+        assert registry.get_media_count() == 1
+    
+    def test_add_media_most_recent_first(self, temp_dir):
+        """Test that new media is added at the beginning (most recent first)"""
+        registry_file = os.path.join(temp_dir, "test_order.json")
+        registry = MediaRegistry(registry_file)
+        
+        # Add entries in order
+        registry.add_media("media/oldest.jpg")
+        registry.add_media("media/newer.png")
+        registry.add_media("media/newest.webm")
+        
+        # Check order (most recent first)
+        all_media = registry.get_all_media()
+        assert len(all_media) == 3
+        assert all_media[0]['path'] == "media/newest.webm"  # Most recent
+        assert all_media[1]['path'] == "media/newer.png"    # Middle
+        assert all_media[2]['path'] == "media/oldest.jpg"   # Oldest

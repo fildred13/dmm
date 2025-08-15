@@ -6,7 +6,7 @@ Handles image resizing, format conversion, and optimization
 from pathlib import Path
 from PIL import Image
 from typing import Tuple
-from .config import MAX_WIDTH, MAX_HEIGHT, JPEG_QUALITY
+from .config import LANDSCAPE_TARGET_WIDTH, PORTRAIT_TARGET_HEIGHT, SQUARE_TARGET_SIZE, JPEG_QUALITY
 
 
 class ImageProcessor:
@@ -17,15 +17,21 @@ class ImageProcessor:
         """Calculate new dimensions while maintaining aspect ratio"""
         aspect_ratio = width / height
         
-        # Determine which max dimension to target based on aspect ratio
-        if aspect_ratio >= MAX_WIDTH / MAX_HEIGHT:
-            # Wider than target ratio - scale to max width
-            new_width = MAX_WIDTH
+        # Landscape media: scale to width = 1024, height calculated proportionally
+        # Portrait media: scale to height = 576, width calculated proportionally
+        # Square media: scale to width = height = 576
+        if aspect_ratio > 1.0:
+            # Landscape - scale to width = 1024
+            new_width = LANDSCAPE_TARGET_WIDTH
             new_height = int(new_width / aspect_ratio)
-        else:
-            # Taller than target ratio - scale to max height
-            new_height = MAX_HEIGHT
+        elif aspect_ratio < 1.0:
+            # Portrait - scale to height = 576
+            new_height = PORTRAIT_TARGET_HEIGHT
             new_width = int(new_height * aspect_ratio)
+        else:
+            # Square - scale to 576x576
+            new_width = SQUARE_TARGET_SIZE
+            new_height = SQUARE_TARGET_SIZE
         
         return new_width, new_height
     

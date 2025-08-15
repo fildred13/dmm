@@ -31,10 +31,12 @@ dmm/
 ## 🎯 **Core Functionality**
 
 - **Automatic Media Processing**: Resizes all media to max 576×1024 while preserving aspect ratio
-- **Format Conversion**: Converts to supported output formats (.webm, .mp4, .png, .gif, .jpg)
+- **Format Conversion**: Converts to supported output formats (.webm, .mp4, .png, .jpg)
 - **Centralized Registry**: JSON-based media registry for easy asset management
 - **Batch Upload**: Support for multiple file uploads with drag & drop
 - **Preview System**: Beautiful media preview with navigation controls
+- **Delete Functionality**: Delete media files with confirmation dialog
+- **Chronological Ordering**: Media files ordered by upload time (most recent first)
 
 ## 🎨 **User Interface**
 

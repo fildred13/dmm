@@ -98,6 +98,29 @@ def get_media_info(index):
         return jsonify(media_info)
     return jsonify({'error': 'Index out of range'}), 404
 
+@app.route('/api/media/<int:index>', methods=['DELETE'])
+def delete_media(index):
+    """Delete a media file by index"""
+    try:
+        media_info = registry.get_media_by_index(index)
+        if not media_info:
+            return jsonify({'error': 'Index out of range'}), 404
+        
+        # Get the file path
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], media_info['path'].split('/')[-1])
+        
+        # Delete the file if it exists
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Remove from registry
+        registry.remove_media_by_index(index)
+        
+        return jsonify({'message': 'Media file deleted successfully'})
+        
+    except Exception as e:
+        return jsonify({'error': f'Error deleting media file: {str(e)}'}), 500
+
 @app.route('/api/media/count')
 def get_media_count():
     """Get the total number of media files"""

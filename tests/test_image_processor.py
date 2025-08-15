@@ -16,25 +16,25 @@ class TestImageProcessor:
         """Test dimension calculation for landscape images"""
         # Test landscape image that needs resizing
         width, height = ImageProcessor.calculate_dimensions(1920, 1080)
-        assert width == 576
-        assert height == 324
+        assert width == 1024  # Landscape: scale to width = 1024
+        assert height == 576  # 1024 * (1080/1920) = 576
         
         # Test landscape image that needs upscaling
         width, height = ImageProcessor.calculate_dimensions(400, 300)
-        assert width == 576  # Upscaled to max width
-        assert height == 432  # 576 * (300/400) = 432
+        assert width == 1024  # Landscape: scale to width = 1024
+        assert height == 768  # 1024 * (300/400) = 768
     
     def test_calculate_dimensions_portrait(self):
         """Test dimension calculation for portrait images"""
         # Test portrait image that needs resizing
         width, height = ImageProcessor.calculate_dimensions(1080, 1920)
-        assert width == 576  # 1024 * (1080/1920) = 576
-        assert height == 1024  # min(1920, 1024) = 1024
+        assert width == 324  # Portrait: scale to height = 576, width = 576 * (1080/1920) = 324
+        assert height == 576  # Portrait: scale to height = 576
         
         # Test portrait image that needs upscaling
         width, height = ImageProcessor.calculate_dimensions(300, 400)
-        assert width == 576  # Upscaled to max width
-        assert height == 768  # 576 * (400/300) = 768
+        assert width == 432  # Portrait: scale to height = 576, width = 576 * (300/400) = 432
+        assert height == 576  # Portrait: scale to height = 576
     
     def test_calculate_dimensions_square(self):
         """Test dimension calculation for square images"""
@@ -50,15 +50,15 @@ class TestImageProcessor:
     
     def test_calculate_dimensions_edge_cases(self):
         """Test dimension calculation edge cases"""
-        # Test exact maximum dimensions
+        # Test portrait image (576x1024) - should scale to height = 576
         width, height = ImageProcessor.calculate_dimensions(576, 1024)
-        assert width == 576
-        assert height == 1024
+        assert width == 324  # Portrait: scale to height = 576, width = 576 * (576/1024) = 324
+        assert height == 576  # Portrait: scale to height = 576
         
-        # Test very small image (should be upscaled)
+        # Test very small landscape image (100x50) - should scale to width = 1024
         width, height = ImageProcessor.calculate_dimensions(100, 50)
-        assert width == 576  # Upscaled to max width
-        assert height == 288  # 576 * (50/100) = 288
+        assert width == 1024  # Landscape: scale to width = 1024
+        assert height == 512  # 1024 * (50/100) = 512
     
     def test_resize_image_success(self, temp_dir):
         """Test successful image resizing"""
@@ -79,8 +79,8 @@ class TestImageProcessor:
         
         # Verify output image dimensions
         with Image.open(output_path) as output_img:
-            assert output_img.size[0] == 576  # Should be resized to max width
-            assert output_img.size[1] == 324  # Should maintain aspect ratio
+            assert output_img.size[0] == 1024  # Landscape: should be resized to width = 1024
+            assert output_img.size[1] == 576  # Should maintain aspect ratio
     
     def test_resize_image_different_formats(self, temp_dir):
         """Test image resizing with different output formats"""

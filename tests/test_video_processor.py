@@ -14,25 +14,25 @@ class TestVideoProcessor:
         """Test dimension calculation for landscape videos"""
         # Test landscape video that needs resizing
         width, height = VideoProcessor.calculate_dimensions(1920, 1080)
-        assert width == 576
-        assert height == 324
+        assert width == 1024  # Landscape: scale to width = 1024
+        assert height == 576  # 1024 * (1080/1920) = 576
         
         # Test landscape video that needs upscaling
         width, height = VideoProcessor.calculate_dimensions(400, 300)
-        assert width == 576  # Upscaled to max width
-        assert height == 432  # 576 * (300/400) = 432
+        assert width == 1024  # Landscape: scale to width = 1024
+        assert height == 768  # 1024 * (300/400) = 768
     
     def test_calculate_dimensions_portrait(self):
         """Test dimension calculation for portrait videos"""
         # Test portrait video that needs resizing
         width, height = VideoProcessor.calculate_dimensions(1080, 1920)
-        assert width == 576  # 1024 * (1080/1920) = 576
-        assert height == 1024  # min(1920, 1024) = 1024
+        assert width == 324  # Portrait: scale to height = 576, width = 576 * (1080/1920) = 324
+        assert height == 576  # Portrait: scale to height = 576
         
         # Test portrait video that needs upscaling
         width, height = VideoProcessor.calculate_dimensions(300, 400)
-        assert width == 576  # Upscaled to max width
-        assert height == 768  # 576 * (400/300) = 768
+        assert width == 432  # Portrait: scale to height = 576, width = 576 * (300/400) = 432
+        assert height == 576  # Portrait: scale to height = 576
     
     def test_calculate_dimensions_even_numbers(self):
         """Test that dimensions are always even numbers"""

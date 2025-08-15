@@ -107,6 +107,79 @@
         cursor: not-allowed;
     }
 
+    .delete-btn {
+        background: rgba(220, 53, 69, 0.9);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-top: 0.5rem;
+    }
+
+    .delete-btn:hover {
+        background: rgba(220, 53, 69, 1);
+        transform: translateY(-1px);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 2rem;
+        border-radius: 12px;
+        width: 400px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+
+    .modal-btn {
+        padding: 0.5rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .modal-btn.confirm {
+        background: #dc3545;
+        color: white;
+    }
+
+    .modal-btn.confirm:hover {
+        background: #c82333;
+    }
+
+    .modal-btn.cancel {
+        background: #6c757d;
+        color: white;
+    }
+
+    .modal-btn.cancel:hover {
+        background: #5a6268;
+    }
+
     .media-display {
         background: rgba(0, 0, 0, 0.8);
         border-radius: 16px;
@@ -200,12 +273,29 @@
                 <button class="nav-btn" id="prevBtn" onclick="previousMedia()">‹</button>
                 <button class="nav-btn" id="nextBtn" onclick="nextMedia()">›</button>
             </div>
+            
+            <button class="delete-btn" id="deleteBtn" onclick="showDeleteConfirmation()" style="display: none;">
+                Delete Media
+            </button>
         </div>
         
         <div class="preview-main">
             <div class="media-display" id="mediaDisplay">
                 <div class="no-media">No media files found. Upload some files first!</div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h3>Delete Media File</h3>
+        <p>Are you sure you want to delete "<span id="deleteFileName"></span>"?</p>
+        <p style="color: #666; font-size: 0.9rem;">This action cannot be undone.</p>
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="hideDeleteConfirmation()">Cancel</button>
+            <button class="modal-btn confirm" onclick="deleteCurrentMedia()">Delete</button>
         </div>
     </div>
 </div>
@@ -227,9 +317,11 @@ async function loadMediaList() {
         if (mediaList.length > 0) {
             showMedia(0);
             document.getElementById('navigation').style.display = 'flex';
+            document.getElementById('deleteBtn').style.display = 'block';
         } else {
             document.getElementById('mediaDisplay').innerHTML = 
                 '<div class="no-media">No media files found. Upload some files first!</div>';
+            document.getElementById('deleteBtn').style.display = 'none';
         }
     } catch (error) {
         console.error('Error loading media list:', error);
@@ -254,6 +346,9 @@ async function showMedia(index) {
     // Update navigation buttons
     document.getElementById('prevBtn').disabled = index === 0;
     document.getElementById('nextBtn').disabled = index === mediaList.length - 1;
+    
+    // Show delete button
+    document.getElementById('deleteBtn').style.display = 'block';
     
     // Update basic media info
     document.getElementById('mediaInfo').style.display = 'block';
@@ -344,5 +439,65 @@ document.addEventListener('keydown', async (e) => {
             break;
     }
 });
+
+// Delete functionality
+function showDeleteConfirmation() {
+    const currentMedia = mediaList[currentIndex];
+    const fileName = currentMedia.path.split('/').pop();
+    document.getElementById('deleteFileName').textContent = fileName;
+    document.getElementById('deleteModal').style.display = 'block';
+}
+
+function hideDeleteConfirmation() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+async function deleteCurrentMedia() {
+    try {
+        const currentMedia = mediaList[currentIndex];
+        const response = await fetch(`/api/media/${currentIndex}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            // Remove from local list
+            mediaList.splice(currentIndex, 1);
+            
+            // Hide modal
+            hideDeleteConfirmation();
+            
+            // Update display
+            if (mediaList.length === 0) {
+                // No more media files
+                document.getElementById('mediaDisplay').innerHTML = 
+                    '<div class="no-media">No media files found. Upload some files first!</div>';
+                document.getElementById('navigation').style.display = 'none';
+                document.getElementById('deleteBtn').style.display = 'none';
+                document.getElementById('mediaInfo').style.display = 'none';
+            } else {
+                // Show next media or previous if at end
+                let newIndex = currentIndex;
+                if (newIndex >= mediaList.length) {
+                    newIndex = mediaList.length - 1;
+                }
+                await showMedia(newIndex);
+            }
+        } else {
+            const errorData = await response.json();
+            alert(`Error deleting file: ${errorData.error}`);
+        }
+    } catch (error) {
+        console.error('Error deleting media:', error);
+        alert('Error deleting media file. Please try again.');
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target === modal) {
+        hideDeleteConfirmation();
+    }
+}
 </script>
 {% endblock %}

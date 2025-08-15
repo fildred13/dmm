@@ -37,9 +37,10 @@ class MediaRegistry:
             return False
     
     def add_media(self, media_path: str) -> bool:
-        """Add a new media entry to the registry"""
+        """Add a new media entry to the registry (most recent first)"""
         registry = self.load()
-        registry.append({'path': media_path})
+        # Insert at the beginning to maintain reverse chronological order
+        registry.insert(0, {'path': media_path})
         return self.save(registry)
     
     def get_all_media(self) -> List[Dict[str, Any]]:
@@ -56,6 +57,14 @@ class MediaRegistry:
     def get_media_count(self) -> int:
         """Get the total number of media entries"""
         return len(self.load())
+    
+    def remove_media_by_index(self, index: int) -> bool:
+        """Remove a media entry by index"""
+        registry = self.load()
+        if 0 <= index < len(registry):
+            registry.pop(index)
+            return self.save(registry)
+        return False
     
     def clear_registry(self) -> bool:
         """Clear all entries from the registry"""
