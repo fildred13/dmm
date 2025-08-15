@@ -10,10 +10,8 @@ from .config import LANDSCAPE_TARGET_WIDTH, PORTRAIT_TARGET_HEIGHT, SQUARE_TARGE
 try:
     from wand.image import Image as WandImage
     WAND_AVAILABLE = True
-    print(f"✅ Wand import successful at module level, WAND_AVAILABLE: {WAND_AVAILABLE}")
-except ImportError as e:
+except ImportError:
     WAND_AVAILABLE = False
-    print(f"❌ Wand import failed at module level: {e}, WAND_AVAILABLE: {WAND_AVAILABLE}")
 
 
 class VideoProcessor:
@@ -54,43 +52,33 @@ class VideoProcessor:
     @staticmethod
     def convert_webp_to_webm(webp_path: str, output_path: str) -> bool:
         """Convert animated WebP to WebM using Wand/ImageMagick"""
-        print(f"🔍 convert_webp_to_webm called, WAND_AVAILABLE: {WAND_AVAILABLE}")
         if not WAND_AVAILABLE:
-            print("❌ Wand/ImageMagick not available for WebP conversion")
+            print("Wand/ImageMagick not available for WebP conversion")
             return False
         
         try:
-            print(f"🔄 Attempting Wand conversion: {webp_path}")
-            print(f"🔍 About to create WandImage object...")
             with WandImage(filename=webp_path) as img:
                 # Check if the image is animated by counting frames
                 # Note: img.animation property is unreliable for WebP files
-                print(f"🔍 Checking animation with img.sequence...")
                 frames = len(img.sequence)
-                print(f"🔍 Frame count: {frames}")
                 if frames <= 1:
-                    print(f"❌ WebP file is not animated (only {frames} frame): {webp_path}")
+                    print(f"WebP file is not animated (only {frames} frame): {webp_path}")
                     return False
-                print(f"✅ Detected animated WebP with {frames} frames: {webp_path}")
                 
                 # Coalesce frames to ensure proper animation handling
-                print(f"🔄 Coalescing frames...")
                 img.coalesce()
                 # Set format to webm
-                print(f"🔄 Setting format to webm...")
                 img.format = 'webm'
                 # Save to output path
-                print(f"🔄 Saving to {output_path}...")
                 img.save(filename=output_path)
-            print(f"✅ Successfully converted WebP to WebM: {output_path}")
             return True
         except Exception as e:
-            print(f"❌ Error converting WebP to WebM with Wand: {e}")
+            print(f"Error converting WebP to WebM with Wand: {e}")
             # Provide more specific error information
             if "corrupt image" in str(e).lower():
-                print(f"❌ WebP file appears to be corrupted or invalid: {webp_path}")
+                print(f"WebP file appears to be corrupted or invalid: {webp_path}")
             elif "unable to open image" in str(e).lower():
-                print(f"❌ Unable to open WebP file: {webp_path}")
+                print(f"Unable to open WebP file: {webp_path}")
             return False
     
     @staticmethod

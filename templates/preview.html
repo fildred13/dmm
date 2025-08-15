@@ -386,9 +386,18 @@ async function showMedia(index) {
         video.src = '/' + media.path;
         video.controls = true;
         video.autoplay = true;  // Auto-play videos
-        video.muted = true;     // Muted to allow autoplay
+        video.muted = true;     // Initially muted to allow autoplay
         video.loop = true;      // Loop the video
         video.className = 'fade-in';
+        
+        // Enable audio after video starts playing
+        video.addEventListener('play', () => {
+            // Small delay to ensure autoplay has started
+            setTimeout(() => {
+                video.muted = false;
+            }, 100);
+        });
+        
         video.onloadstart = () => {
             document.getElementById('mediaDisplay').innerHTML = '';
             document.getElementById('mediaDisplay').appendChild(video);
