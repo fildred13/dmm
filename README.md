@@ -31,7 +31,8 @@ dmm/
 ## 🎯 **Core Functionality**
 
 - **Automatic Media Processing**: Resizes all media to max 576×1024 while preserving aspect ratio
-- **Format Conversion**: Converts to supported output formats (.webm, .mp4, .png, .jpg)
+- **Format Conversion**: Converts to supported output formats (.webm, .png, .jpg)
+- **Dynamic Registry System**: Switch between different media registries on any path on your system
 - **Centralized Registry**: JSON-based media registry for easy asset management
 - **Batch Upload**: Support for multiple file uploads with drag & drop
 - **Preview System**: Beautiful media preview with navigation controls
@@ -170,10 +171,16 @@ Simply double-click these files or run them from the command line.
 
 ## 📖 **Usage**
 
+### Registry Management
+1. **Current Registry**: The navbar displays the current registry path and media count
+2. **Switch Registry**: Click the "Switch" button in the navbar to change to a different registry
+3. **Registry Path**: Enter the full path to any `media_registry.json` file on your system
+4. **Auto Media Directory**: The tool automatically creates/uses a `media/` folder relative to the registry file
+
 ### Upload Mode
 1. Navigate to the "Upload" page
 2. Drag and drop files or click "Choose Files"
-3. Watch as files are automatically processed and added to the registry
+3. Watch as files are automatically processed and added to the current registry
 4. Supported formats will be converted and resized automatically
 
 ### Preview Mode
@@ -196,11 +203,17 @@ The `media_registry.json` file contains a simple list of media entries:
 ```json
 [
   {"path": "media/filename.png"},
-  {"path": "media/video.mp4"}
+  {"path": "media/video.webm"}
 ]
 ```
 
 This structure allows for easy expansion to include tags, metadata, and other properties in future iterations.
+
+### Dynamic Registry Paths
+- **Registry Location**: The tool can work with `media_registry.json` files located anywhere on your system
+- **Media Directory**: For each registry file at `/path/to/media_registry.json`, the tool automatically uses `/path/to/media/` for storing processed files
+- **Session Persistence**: Your current registry selection is remembered across browser sessions
+- **Cross-Platform**: Registry paths work on Windows, macOS, and Linux
 
 ### Cross-Platform Compatibility
 - All paths use forward slashes (`/`) for cross-platform compatibility

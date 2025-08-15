@@ -205,3 +205,56 @@ class TestMediaRegistry:
         assert all_media[0]['path'] == "media/newest.webm"  # Most recent
         assert all_media[1]['path'] == "media/newer.png"    # Middle
         assert all_media[2]['path'] == "media/oldest.jpg"   # Oldest
+    
+    def test_get_registry_path(self, temp_dir):
+        """Test getting registry path"""
+        registry_file = os.path.join(temp_dir, "test_registry.json")
+        registry = MediaRegistry(registry_file)
+        path = registry.get_registry_path()
+        assert path == os.path.abspath(registry_file)
+    
+    def test_get_registry_directory(self, temp_dir):
+        """Test getting registry directory"""
+        registry_file = os.path.join(temp_dir, "test_registry.json")
+        registry = MediaRegistry(registry_file)
+        directory = registry.get_registry_directory()
+        assert directory == temp_dir
+    
+    def test_get_registry_name(self, temp_dir):
+        """Test getting registry name"""
+        registry_file = os.path.join(temp_dir, "test_registry.json")
+        registry = MediaRegistry(registry_file)
+        name = registry.get_registry_name()
+        assert name == "test_registry.json"
+    
+    def test_get_display_name_current_directory(self, temp_dir):
+        """Test getting display name for current directory"""
+        # Create registry in current directory
+        registry_file = "media_registry.json"
+        registry = MediaRegistry(registry_file)
+        display_name = registry.get_display_name()
+        assert display_name == "Active Registry"
+    
+    def test_get_display_name_subdirectory(self, temp_dir):
+        """Test getting display name for subdirectory"""
+        # Create a subdirectory
+        subdir = os.path.join(temp_dir, "test_subdir")
+        os.makedirs(subdir, exist_ok=True)
+        registry_file = os.path.join(subdir, "media_registry.json")
+        registry = MediaRegistry(registry_file)
+        display_name = registry.get_display_name()
+        assert display_name == "test_subdir"
+    
+    def test_save_creates_directory(self, temp_dir):
+        """Test that save creates directory if it doesn't exist"""
+        # Create a nested directory structure
+        nested_dir = os.path.join(temp_dir, "nested", "subdir")
+        registry_file = os.path.join(nested_dir, "media_registry.json")
+        registry = MediaRegistry(registry_file)
+        
+        test_data = [{"path": "media/test.png"}]
+        result = registry.save(test_data)
+        
+        assert result is True
+        assert os.path.exists(registry_file)
+        assert os.path.exists(nested_dir)

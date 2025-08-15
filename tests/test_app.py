@@ -26,7 +26,6 @@ def client(temp_dir):
     
     # Configure app for testing
     app.config['TESTING'] = True
-    app.config['UPLOAD_FOLDER'] = test_media_dir
     
     # Temporarily patch the global registry and media processor to use test files
     from media_processor.registry import MediaRegistry
@@ -39,7 +38,7 @@ def client(temp_dir):
     
     # Create test instances
     test_registry = MediaRegistry(test_registry_file)
-    test_media_processor = MediaProcessor(test_media_dir)
+    test_media_processor = MediaProcessor(test_registry_file)
     
     # Patch the global instances
     app_module.registry = test_registry
@@ -136,10 +135,58 @@ class TestAppRoutes:
         assert 'count' in data
         assert isinstance(data['count'], int)
     
+    def test_current_registry_api(self, client):
+        """Test current registry API"""
+        response = client.get('/api/registry/current')
+        assert response.status_code == 200
+        
+        data = json.loads(response.data)
+        assert 'path' in data
+        assert 'directory' in data
+        assert 'name' in data
+        assert 'display_name' in data
+        assert 'media_count' in data
+        assert isinstance(data['media_count'], int)
+    
+    def test_switch_registry_api_success(self, client, temp_dir):
+        """Test switching registry API with success"""
+        # Create a new registry file
+        new_registry_file = os.path.join(temp_dir, "new_registry.json")
+        with open(new_registry_file, 'w') as f:
+            json.dump([], f)
+        
+        response = client.post('/api/registry/switch', 
+                             json={'registry_path': new_registry_file})
+        assert response.status_code == 200
+        
+        data = json.loads(response.data)
+        assert data['success'] is True
+        assert 'registry_info' in data
+        assert data['registry_info']['path'] == os.path.abspath(new_registry_file)
+    
+    def test_switch_registry_api_missing_path(self, client):
+        """Test switching registry API with missing path"""
+        response = client.post('/api/registry/switch', json={})
+        assert response.status_code == 400
+        
+        data = json.loads(response.data)
+        assert 'error' in data
+        assert 'Registry path is required' in data['error']
+    
+    def test_switch_registry_api_empty_path(self, client):
+        """Test switching registry API with empty path"""
+        response = client.post('/api/registry/switch', json={'registry_path': ''})
+        assert response.status_code == 400
+        
+        data = json.loads(response.data)
+        assert 'error' in data
+        assert 'Registry path cannot be empty' in data['error']
+    
     def test_serve_media(self, client, test_image_file, temp_dir):
         """Test serving media files"""
-        # Create a test file in the temporary media directory
-        test_media_dir = os.path.join(temp_dir, "test_media")
+        # Create a test file in the media directory that corresponds to the test registry
+        test_media_dir = os.path.join(temp_dir, "media")
+        os.makedirs(test_media_dir, exist_ok=True)
         test_file = os.path.join(test_media_dir, 'test.jpg')
         with open(test_file, 'w') as f:
             f.write('test content')

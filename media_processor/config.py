@@ -5,11 +5,10 @@ Configuration settings for the Media Management Tool
 import os
 
 # Flask Configuration
-UPLOAD_FOLDER = 'media'
 MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
 
 # Registry Configuration
-REGISTRY_FILE = 'media_registry.json'
+DEFAULT_REGISTRY_FILE = 'media_registry.json'
 
 # Supported File Formats
 SUPPORTED_INPUT_FORMATS = {
@@ -34,5 +33,15 @@ VIDEO_CRF_WEBM = 30
 # Image Processing Settings
 JPEG_QUALITY = 95
 
-# Ensure media directory exists
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def get_media_folder_from_registry(registry_path: str) -> str:
+    """Get the media folder path based on the registry file location"""
+    registry_dir = os.path.dirname(registry_path)
+    return os.path.join(registry_dir, 'media')
+
+
+def ensure_media_folder_exists(registry_path: str) -> str:
+    """Ensure the media folder exists and return its path"""
+    media_folder = get_media_folder_from_registry(registry_path)
+    os.makedirs(media_folder, exist_ok=True)
+    return media_folder

@@ -6,7 +6,7 @@ Orchestrates the media processing workflow
 import os
 from pathlib import Path
 from typing import Tuple, Optional
-from .config import UPLOAD_FOLDER
+from .config import ensure_media_folder_exists
 from .file_utils import FileUtils
 from .image_processor import ImageProcessor
 from .video_processor import VideoProcessor
@@ -15,8 +15,20 @@ from .video_processor import VideoProcessor
 class MediaProcessor:
     """Main media processing orchestrator"""
     
-    def __init__(self, upload_folder: str = UPLOAD_FOLDER):
-        self.upload_folder = upload_folder
+    def __init__(self, registry_path: str = None):
+        """
+        Initialize the media processor
+        
+        Args:
+            registry_path: Path to the registry file. If None, uses default.
+        """
+        if registry_path is None:
+            from .config import DEFAULT_REGISTRY_FILE
+            registry_path = DEFAULT_REGISTRY_FILE
+        
+        self.registry_path = registry_path
+        # Ensure media folder exists and get its path
+        self.upload_folder = ensure_media_folder_exists(registry_path)
     
     def process_media_file(self, file_path: str) -> Tuple[Optional[str], Optional[str]]:
         """
@@ -50,7 +62,7 @@ class MediaProcessor:
                 return None, f"Failed to process {file_type}"
             
             # Return relative path for registry (always use forward slashes for cross-platform compatibility)
-            relative_path = FileUtils.normalize_path(f'{self.upload_folder}/{output_filename}')
+            relative_path = FileUtils.normalize_path(f'media/{output_filename}')
             return relative_path, None
             
         except Exception as e:

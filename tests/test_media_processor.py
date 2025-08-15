@@ -13,15 +13,16 @@ class TestMediaProcessor:
     """Test main media processor functionality"""
     
     def test_init_default(self):
-        """Test processor initialization with default upload folder"""
+        """Test processor initialization with default registry"""
         processor = MediaProcessor()
-        assert processor.upload_folder == 'media'
+        assert 'media' in processor.upload_folder
     
-    def test_init_custom_folder(self, temp_dir):
-        """Test processor initialization with custom upload folder"""
-        custom_folder = os.path.join(temp_dir, "custom_media")
-        processor = MediaProcessor(custom_folder)
-        assert processor.upload_folder == custom_folder
+    def test_init_custom_registry(self, temp_dir):
+        """Test processor initialization with custom registry"""
+        custom_registry = os.path.join(temp_dir, "custom_registry.json")
+        processor = MediaProcessor(custom_registry)
+        expected_media_folder = os.path.join(temp_dir, "media")
+        assert processor.upload_folder == expected_media_folder
     
     def test_process_media_file_image_success(self, temp_dir):
         """Test successful image processing"""
@@ -31,16 +32,15 @@ class TestMediaProcessor:
         img = Image.fromarray(img_array)
         img.save(input_path)
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert error is None
         # Use normalized path comparison
-        expected_path = f"{upload_folder}/test.jpg".replace('\\', '/')
+        expected_path = "media/test.jpg"
         assert relative_path == expected_path
         assert os.path.exists(os.path.join(temp_dir, "media", "test.jpg"))
     
@@ -52,16 +52,15 @@ class TestMediaProcessor:
         img = Image.fromarray(img_array)
         img.save(input_path)
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert error is None
         # Use normalized path comparison
-        expected_path = f"{upload_folder}/test.png".replace('\\', '/')
+        expected_path = "media/test.png"
         assert relative_path == expected_path  # Should convert to PNG
         assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
     
@@ -73,16 +72,15 @@ class TestMediaProcessor:
         img = Image.fromarray(img_array)
         img.save(input_path)
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert error is None
         # Use normalized path comparison
-        expected_path = f"{upload_folder}/test.png".replace('\\', '/')
+        expected_path = "media/test.png"
         assert relative_path == expected_path  # Should convert to PNG
         assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
     
@@ -94,21 +92,20 @@ class TestMediaProcessor:
         img = Image.fromarray(img_array)
         img.save(input_path)
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
         # Mock the animated GIF detection
         from media_processor.file_utils import FileUtils
         with pytest.MonkeyPatch().context() as m:
             m.setattr(FileUtils, 'is_animated_gif', lambda x: True)
             
-            processor = MediaProcessor(upload_folder)
+            processor = MediaProcessor(registry_file)
             relative_path, error = processor.process_media_file(input_path)
             
             assert error is None
             # Use normalized path comparison
-            expected_path = f"{upload_folder}/test.webm".replace('\\', '/')
+            expected_path = "media/test.webm"
             assert relative_path == expected_path  # Should convert to WEBM
             # Note: We don't check if the file exists because we're mocking FFmpeg
     
@@ -120,9 +117,8 @@ class TestMediaProcessor:
         img = Image.fromarray(img_array)
         img.save(input_path)
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
         # Mock the animated WebP detection and Wand conversion
         from media_processor.file_utils import FileUtils
@@ -132,12 +128,12 @@ class TestMediaProcessor:
             # Mock the Wand conversion to return success
             m.setattr(VideoProcessor, 'convert_webp_to_webm', lambda x, y: True)
             
-            processor = MediaProcessor(upload_folder)
+            processor = MediaProcessor(registry_file)
             relative_path, error = processor.process_media_file(input_path)
             
             assert error is None
             # Use normalized path comparison
-            expected_path = f"{upload_folder}/test.webm".replace('\\', '/')
+            expected_path = "media/test.webm"
             assert relative_path == expected_path  # Should convert to WEBM
             # Note: We don't check if the file exists because we're mocking FFmpeg
     
@@ -149,21 +145,20 @@ class TestMediaProcessor:
         img = Image.fromarray(img_array)
         img.save(input_path)
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
         # Mock the static WebP detection (both animation methods return False)
         from media_processor.file_utils import FileUtils
         with pytest.MonkeyPatch().context() as m:
             m.setattr(FileUtils, 'is_animated_webp', lambda x: False)
             
-            processor = MediaProcessor(upload_folder)
+            processor = MediaProcessor(registry_file)
             relative_path, error = processor.process_media_file(input_path)
             
             assert error is None
             # Use normalized path comparison
-            expected_path = f"{upload_folder}/test.png".replace('\\', '/')
+            expected_path = "media/test.png"
             assert relative_path == expected_path  # Should convert to PNG
             assert os.path.exists(os.path.join(temp_dir, "media", "test.png"))
     
@@ -174,16 +169,15 @@ class TestMediaProcessor:
         with open(input_path, 'w') as f:
             f.write("dummy video content")
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert error is None
         # Use normalized path comparison
-        expected_path = f"{upload_folder}/test.webm".replace('\\', '/')
+        expected_path = "media/test.webm"
         assert relative_path == expected_path  # Should convert to WebM
         # Note: We don't check if the file exists because we're mocking FFmpeg
     
@@ -194,10 +188,9 @@ class TestMediaProcessor:
         with open(input_path, 'w') as f:
             f.write("text content")
         
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert relative_path is None
@@ -213,10 +206,9 @@ class TestMediaProcessor:
         with open(input_path, 'w') as f:
             f.write("dummy video content")
         
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert relative_path is None
@@ -229,10 +221,9 @@ class TestMediaProcessor:
         with open(input_path, 'w') as f:
             f.write("not an image")
         
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert relative_path is None
@@ -297,11 +288,10 @@ class TestMediaProcessor:
         img = Image.fromarray(img_array)
         img.save(input_path)
         
-        # Create upload folder
-        upload_folder = os.path.join(temp_dir, "media")
-        os.makedirs(upload_folder, exist_ok=True)
+        # Create registry file
+        registry_file = os.path.join(temp_dir, "test_registry.json")
         
-        processor = MediaProcessor(upload_folder)
+        processor = MediaProcessor(registry_file)
         relative_path, error = processor.process_media_file(input_path)
         
         assert error is None

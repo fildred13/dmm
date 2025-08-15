@@ -47,6 +47,7 @@
             display: flex;
             list-style: none;
             gap: 2rem;
+            align-items: center;
         }
 
         .nav-menu a {
@@ -66,6 +67,156 @@
         .nav-menu a.active {
             background: #667eea;
             color: white;
+        }
+
+        .registry-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .registry-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .registry-name {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.9rem;
+        }
+
+        .registry-path {
+            font-size: 0.75rem;
+            color: #666;
+            max-width: 350px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .registry-switch-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .registry-switch-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .registry-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .registry-modal.show {
+            display: flex;
+        }
+
+        .registry-modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .registry-modal h2 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .registry-input-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .registry-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .registry-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .registry-browse-btn {
+            padding: 0.75rem 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .registry-browse-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .registry-recent {
+            margin-bottom: 1rem;
+        }
+
+        .registry-recent h3 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .registry-recent-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .registry-recent-btn {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            word-break: break-all;
+        }
+
+        .registry-recent-btn:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .registry-modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
         }
 
         .main-content {
@@ -163,6 +314,17 @@
 
             .nav-menu {
                 gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .registry-selector {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .registry-path {
+                max-width: 150px;
             }
 
             .main-content {
@@ -183,13 +345,222 @@
             <ul class="nav-menu">
                 <li><a href="/upload" class="{% if request.endpoint == 'upload_page' %}active{% endif %}">Upload</a></li>
                 <li><a href="/preview" class="{% if request.endpoint == 'preview_page' %}active{% endif %}">Preview</a></li>
+                <li class="registry-selector">
+                    <div class="registry-info">
+                        <div class="registry-name" id="registry-name">Loading...</div>
+                        <div class="registry-path" id="registry-path">Loading...</div>
+                    </div>
+                    <button class="registry-switch-btn" onclick="showRegistryModal()">Switch</button>
+                </li>
             </ul>
         </div>
     </nav>
 
+         <!-- Registry Switch Modal -->
+     <div class="registry-modal" id="registryModal">
+         <div class="registry-modal-content">
+             <h2>Switch Registry</h2>
+             <p>Enter the full path to a media registry file:</p>
+             <div class="registry-input-container">
+                 <input type="text" class="registry-input" id="registryPathInput" 
+                        placeholder="e.g., C:\Users\YourName\Documents\media_registry.json">
+                 <button class="registry-browse-btn" onclick="switchRegistry()">Switch</button>
+             </div>
+             <div class="registry-recent">
+                 <h3>Recent Registries:</h3>
+                 <div class="registry-recent-buttons" id="recentRegistries">
+                     <!-- Recent registry buttons will be populated here -->
+                 </div>
+             </div>
+             <div class="registry-modal-buttons">
+                 <button class="btn btn-secondary" onclick="hideRegistryModal()">Cancel</button>
+             </div>
+         </div>
+     </div>
+
     <div class="main-content">
         {% block content %}{% endblock %}
     </div>
+
+    <script>
+        // Load current registry info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentRegistry();
+        });
+
+        function loadCurrentRegistry() {
+            fetch('/api/registry/current')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('registry-name').textContent = data.display_name;
+                    // Truncate long paths intelligently
+                    const path = data.path;
+                    const truncatedPath = truncatePath(path);
+                    document.getElementById('registry-path').textContent = truncatedPath;
+                    document.getElementById('registry-path').title = path; // Show full path on hover
+                    
+                    // Add current registry to recent list (only if it's not already there)
+                    const recent = getRecentRegistries();
+                    if (!recent.includes(path)) {
+                        addToRecentRegistries(path);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading registry info:', error);
+                    document.getElementById('registry-name').textContent = 'Error';
+                    document.getElementById('registry-path').textContent = 'Failed to load';
+                });
+        }
+
+        function truncatePath(path) {
+            if (path.length <= 50) return path;
+            
+            // Split path into parts
+            const parts = path.split(/[\\\/]/);
+            if (parts.length <= 2) return path;
+            
+            // Keep first and last parts, truncate middle
+            const first = parts[0];
+            const last = parts[parts.length - 1];
+            const middle = parts.slice(1, -1);
+            
+            if (middle.length === 0) return path;
+            
+            // If middle is short, just show it
+            if (middle.join('/').length <= 20) {
+                return parts.join('/');
+            }
+            
+            // Show first directory and last directory for better identification
+            const firstDir = parts[1] || '';
+            const lastDir = parts[parts.length - 2] || '';
+            
+            if (firstDir && lastDir && firstDir !== lastDir) {
+                return `${first}/${firstDir}/.../${lastDir}/${last}`;
+            } else if (firstDir) {
+                return `${first}/${firstDir}/.../${last}`;
+            } else {
+                return `${first}/.../${last}`;
+            }
+        }
+
+        function showRegistryModal() {
+            document.getElementById('registryModal').classList.add('show');
+            document.getElementById('registryPathInput').focus();
+            loadRecentRegistries();
+        }
+
+        function hideRegistryModal() {
+            document.getElementById('registryModal').classList.remove('show');
+            document.getElementById('registryPathInput').value = '';
+        }
+
+        function loadRecentRegistries() {
+            const recentRegistries = getRecentRegistries();
+            const container = document.getElementById('recentRegistries');
+            container.innerHTML = '';
+            
+            if (recentRegistries.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-style: italic;">No recent registries</p>';
+                return;
+            }
+            
+            recentRegistries.forEach(registryPath => {
+                const button = document.createElement('button');
+                button.className = 'registry-recent-btn';
+                button.innerHTML = `<strong>Switch to:</strong> ${registryPath}`;
+                button.onclick = () => {
+                    document.getElementById('registryPathInput').value = registryPath;
+                };
+                container.appendChild(button);
+            });
+        }
+
+        function getRecentRegistries() {
+            const recent = localStorage.getItem('recentRegistries');
+            return recent ? JSON.parse(recent) : [];
+        }
+
+        function addToRecentRegistries(registryPath) {
+            let recent = getRecentRegistries();
+            
+            // Remove if already exists (to move to top)
+            recent = recent.filter(path => path !== registryPath);
+            
+            // Add to beginning
+            recent.unshift(registryPath);
+            
+            // Keep only the 5 most recent
+            recent = recent.slice(0, 5);
+            
+            localStorage.setItem('recentRegistries', JSON.stringify(recent));
+        }
+
+        function switchRegistry() {
+            const registryPath = document.getElementById('registryPathInput').value.trim();
+            if (!registryPath) {
+                alert('Please enter a registry path');
+                return;
+            }
+            
+            // Basic validation to ensure it looks like a full path
+            if (!registryPath.includes('/') && !registryPath.includes('\\')) {
+                alert('Please enter the full path to the registry file (e.g., C:\\path\\to\\media_registry.json)');
+                return;
+            }
+            
+            if (!registryPath.endsWith('.json')) {
+                alert('Please select a JSON file');
+                return;
+            }
+
+            fetch('/api/registry/switch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ registry_path: registryPath })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add to recent registries
+                    addToRecentRegistries(registryPath);
+                    
+                    // Update the display
+                    document.getElementById('registry-name').textContent = data.registry_info.display_name;
+                    const truncatedPath = truncatePath(data.registry_info.path);
+                    document.getElementById('registry-path').textContent = truncatedPath;
+                    document.getElementById('registry-path').title = data.registry_info.path;
+                    
+                    hideRegistryModal();
+                    
+                    // Reload the page to refresh all data
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error switching registry:', error);
+                alert('Failed to switch registry. Please try again.');
+            });
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('registryModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideRegistryModal();
+            }
+        });
+
+        // Handle Enter key in input
+        document.getElementById('registryPathInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                switchRegistry();
+            }
+        });
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

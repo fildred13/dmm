@@ -6,14 +6,33 @@ Handles loading, saving, and managing the media registry JSON file
 import json
 import os
 from typing import List, Dict, Any
-from .config import REGISTRY_FILE
+from .config import DEFAULT_REGISTRY_FILE
 
 
 class MediaRegistry:
     """Manages the media registry file operations"""
     
-    def __init__(self, registry_file: str = REGISTRY_FILE):
+    def __init__(self, registry_file: str = DEFAULT_REGISTRY_FILE):
         self.registry_file = registry_file
+    
+    def get_registry_path(self) -> str:
+        """Get the full path to the registry file"""
+        return os.path.abspath(self.registry_file)
+    
+    def get_registry_directory(self) -> str:
+        """Get the directory containing the registry file"""
+        return os.path.dirname(self.get_registry_path())
+    
+    def get_registry_name(self) -> str:
+        """Get the name of the registry file"""
+        return os.path.basename(self.registry_file)
+    
+    def get_display_name(self) -> str:
+        """Get a display name for the registry (directory name or registry name)"""
+        registry_dir = self.get_registry_directory()
+        if registry_dir == os.getcwd():
+            return "Active Registry"
+        return os.path.basename(registry_dir) or "Root"
     
     def load(self) -> List[Dict[str, Any]]:
         """Load the media registry from JSON file"""
@@ -29,6 +48,8 @@ class MediaRegistry:
     def save(self, registry: List[Dict[str, Any]]) -> bool:
         """Save the media registry to JSON file"""
         try:
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(self.registry_file), exist_ok=True)
             with open(self.registry_file, 'w') as f:
                 json.dump(registry, f, indent=2)
             return True

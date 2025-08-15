@@ -5,9 +5,8 @@ Tests for configuration module
 import pytest
 import os
 from media_processor.config import (
-    UPLOAD_FOLDER,
     MAX_CONTENT_LENGTH,
-    REGISTRY_FILE,
+    DEFAULT_REGISTRY_FILE,
     SUPPORTED_INPUT_FORMATS,
     SUPPORTED_OUTPUT_FORMATS,
     LANDSCAPE_TARGET_WIDTH,
@@ -15,17 +14,19 @@ from media_processor.config import (
     SQUARE_TARGET_SIZE,
     VIDEO_CRF_MP4,
     VIDEO_CRF_WEBM,
-    JPEG_QUALITY
+    JPEG_QUALITY,
+    get_media_folder_from_registry,
+    ensure_media_folder_exists
 )
 
 
 class TestConfig:
     """Test configuration settings"""
     
-    def test_upload_folder(self):
-        """Test upload folder configuration"""
-        assert UPLOAD_FOLDER == 'media'
-        assert isinstance(UPLOAD_FOLDER, str)
+    def test_default_registry_file(self):
+        """Test default registry file configuration"""
+        assert DEFAULT_REGISTRY_FILE == 'media_registry.json'
+        assert isinstance(DEFAULT_REGISTRY_FILE, str)
     
     def test_max_content_length(self):
         """Test max content length configuration"""
@@ -34,8 +35,8 @@ class TestConfig:
     
     def test_registry_file(self):
         """Test registry file configuration"""
-        assert REGISTRY_FILE == 'media_registry.json'
-        assert isinstance(REGISTRY_FILE, str)
+        assert DEFAULT_REGISTRY_FILE == 'media_registry.json'
+        assert isinstance(DEFAULT_REGISTRY_FILE, str)
     
     def test_supported_input_formats(self):
         """Test supported input formats configuration"""
@@ -87,3 +88,19 @@ class TestConfig:
         assert JPEG_QUALITY == 95
         assert isinstance(JPEG_QUALITY, int)
         assert 0 <= JPEG_QUALITY <= 100
+    
+    def test_get_media_folder_from_registry(self, temp_dir):
+        """Test getting media folder from registry path"""
+        registry_path = os.path.join(temp_dir, "test_registry.json")
+        media_folder = get_media_folder_from_registry(registry_path)
+        expected_folder = os.path.join(temp_dir, "media")
+        assert media_folder == expected_folder
+    
+    def test_ensure_media_folder_exists(self, temp_dir):
+        """Test ensuring media folder exists"""
+        registry_path = os.path.join(temp_dir, "test_registry.json")
+        media_folder = ensure_media_folder_exists(registry_path)
+        expected_folder = os.path.join(temp_dir, "media")
+        assert media_folder == expected_folder
+        assert os.path.exists(media_folder)
+        assert os.path.isdir(media_folder)
