@@ -1,11 +1,12 @@
 """
 Tag Registry Management
-Handles loading, saving, and managing the tag registry JSON file
+Handles loading, saving, and managing tags directly in the events_registry.json file
 """
 
 import json
 import logging
 import os
+import yaml
 from typing import List, Dict, Any, Optional
 from config import get_tag_registry_path
 
@@ -14,107 +15,119 @@ logger = logging.getLogger(__name__)
 
 
 class TagRegistry:
-    """Manages the tag registry file operations"""
+    """Manages tag operations directly in the events_registry.json file"""
     
     def __init__(self, media_registry_path: str):
         self.media_registry_path = media_registry_path
-        self.tag_registry_path = get_tag_registry_path(media_registry_path)
+        self.yaml_config_path = os.path.join(os.path.dirname(media_registry_path), 'events_tags.yaml')
     
     def get_tag_registry_path(self) -> str:
-        """Get the full path to the tag registry file"""
-        return os.path.abspath(self.tag_registry_path)
+        """Get the full path to the media registry file (which now contains tags)"""
+        return os.path.abspath(self.media_registry_path)
     
-    def load(self) -> Dict[str, Any]:
-        """Load the tag registry from JSON file"""
-        if os.path.exists(self.tag_registry_path):
+    def get_tag_config(self) -> Dict[str, Any]:
+        """Load tag configuration from the YAML file"""
+        if os.path.exists(self.yaml_config_path):
             try:
-                with open(self.tag_registry_path, 'r') as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, IOError) as e:
-                logger.error(f"Error loading tag registry: {e}")
-                return self._get_default_structure()
+                with open(self.yaml_config_path, 'r') as f:
+                    return yaml.safe_load(f)
+            except (yaml.YAMLError, IOError) as e:
+                logger.error(f"Error loading tag configuration from YAML: {e}")
+                return {"tags": {}}
         else:
-            # Create default structure if file doesn't exist
-            default_structure = self._get_default_structure()
-            self.save(default_structure)
-            return default_structure
+            logger.warning(f"Tag configuration file not found: {self.yaml_config_path}")
+            return {"tags": {}}
     
-    def save(self, tag_data: Dict[str, Any]) -> bool:
-        """Save the tag registry to JSON file"""
+    def get_media_tags(self, media_path: str) -> Dict[str, Any]:
+        """Get tags for a specific media file from events_registry.json"""
+        registry_data = self.load_registry()
+        for entry in registry_data:
+            if entry.get('path') == media_path:
+                return entry.get('tags', {})
+        return {}
+    
+    def set_media_tags(self, media_path: str, tags: Dict[str, Any]) -> bool:
+        """Set tags for a specific media file in events_registry.json"""
+        registry_data = self.load_registry()
+        
+        # Find the media entry and update its tags
+        for entry in registry_data:
+            if entry.get('path') == media_path:
+                entry['tags'] = tags
+                return self.save_registry(registry_data)
+        
+        # If media not found, add it with tags
+        registry_data.append({
+            'path': media_path,
+            'original_hash': '',  # Will be set by media processor
+            'tags': tags
+        })
+        return self.save_registry(registry_data)
+    
+    def load_registry(self) -> List[Dict[str, Any]]:
+        """Load the events registry from JSON file"""
+        if os.path.exists(self.media_registry_path):
+            try:
+                with open(self.media_registry_path, 'r') as f:
+                    data = json.load(f)
+                    # Ensure each entry has a tags field
+                    for entry in data:
+                        if 'tags' not in entry:
+                            entry['tags'] = {}
+                    return data
+            except (json.JSONDecodeError, IOError) as e:
+                logger.error(f"Error loading events registry: {e}")
+                return []
+        else:
+            logger.warning(f"Events registry file not found: {self.media_registry_path}")
+            return []
+    
+    def save_registry(self, registry_data: List[Dict[str, Any]]) -> bool:
+        """Save the events registry to JSON file"""
         try:
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(self.tag_registry_path), exist_ok=True)
-            with open(self.tag_registry_path, 'w') as f:
-                json.dump(tag_data, f, indent=2)
+            # Ensure the directory exists (only if there is a directory)
+            directory = os.path.dirname(self.media_registry_path)
+            if directory:  # Only create directory if there is one
+                os.makedirs(directory, exist_ok=True)
+            with open(self.media_registry_path, 'w') as f:
+                json.dump(registry_data, f, indent=2)
             return True
         except IOError as e:
-            logger.error(f"Error saving tag registry: {e}")
+            logger.error(f"Error saving events registry: {e}")
             return False
     
-    def _get_default_structure(self) -> Dict[str, Any]:
-        """Get the default tag registry structure"""
-        return {
-            "tags": {},
-            "media_tags": {},
-            "tag_categories": {},
-            "version": "1.0"
-        }
-    
     def get_all_tags(self) -> Dict[str, Any]:
-        """Get all tags from the registry"""
-        return self.load().get('tags', {})
+        """Get all tags from the registry (legacy method - returns empty dict)"""
+        return {}
     
-    def get_media_tags(self) -> Dict[str, Any]:
+    def get_media_tags_old(self) -> Dict[str, Any]:
         """Get all media-tag associations from the registry"""
-        return self.load().get('media_tags', {})
+        registry_data = self.load_registry()
+        media_tags = {}
+        for entry in registry_data:
+            if 'path' in entry and 'tags' in entry:
+                media_tags[entry['path']] = entry['tags']
+        return media_tags
     
     def get_tag_categories(self) -> Dict[str, Any]:
-        """Get all tag categories from the registry"""
-        return self.load().get('tag_categories', {})
+        """Get all tag categories from the registry (legacy method - returns empty dict)"""
+        return {}
     
     def add_tag(self, tag_name: str, tag_info: Dict[str, Any]) -> bool:
-        """Add a new tag to the registry"""
-        tag_data = self.load()
-        tag_data['tags'][tag_name] = tag_info
-        return self.save(tag_data)
+        """Add a new tag to the registry (legacy method - no longer used)"""
+        logger.warning("add_tag method is deprecated - tags are now defined in events_tags.yaml")
+        return False
     
     def remove_tag(self, tag_name: str) -> bool:
-        """Remove a tag from the registry"""
-        tag_data = self.load()
-        if tag_name in tag_data['tags']:
-            del tag_data['tags'][tag_name]
-            return self.save(tag_data)
+        """Remove a tag from the registry (legacy method - no longer used)"""
+        logger.warning("remove_tag method is deprecated - tags are now defined in events_tags.yaml")
         return False
     
     def add_media_tags(self, media_path: str, tags: List[str]) -> bool:
-        """Add tags to a media file"""
-        tag_data = self.load()
-        tag_data['media_tags'][media_path] = tags
-        return self.save(tag_data)
+        """Add tags to a media file (legacy method - use set_media_tags instead)"""
+        logger.warning("add_media_tags method is deprecated - use set_media_tags instead")
+        return False
     
     def remove_media_tags(self, media_path: str) -> bool:
         """Remove all tags from a media file"""
-        tag_data = self.load()
-        if media_path in tag_data['media_tags']:
-            del tag_data['media_tags'][media_path]
-            return self.save(tag_data)
-        return False
-    
-    def get_media_tags_for_file(self, media_path: str) -> List[str]:
-        """Get tags for a specific media file"""
-        tag_data = self.load()
-        return tag_data.get('media_tags', {}).get(media_path, [])
-    
-    def add_tag_category(self, category_name: str, category_info: Dict[str, Any]) -> bool:
-        """Add a new tag category to the registry"""
-        tag_data = self.load()
-        tag_data['tag_categories'][category_name] = category_info
-        return self.save(tag_data)
-    
-    def remove_tag_category(self, category_name: str) -> bool:
-        """Remove a tag category from the registry"""
-        tag_data = self.load()
-        if category_name in tag_data['tag_categories']:
-            del tag_data['tag_categories'][category_name]
-            return self.save(tag_data)
-        return False
+        return self.set_media_tags(media_path, {})

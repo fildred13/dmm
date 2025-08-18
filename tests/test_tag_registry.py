@@ -6,6 +6,7 @@ import pytest
 import json
 import os
 import tempfile
+import yaml
 from tagging.tag_registry import TagRegistry
 
 
@@ -17,146 +18,69 @@ class TestTagRegistry:
         media_registry_path = os.path.join(temp_dir, "events_registry.json")
         tag_registry = TagRegistry(media_registry_path)
         
-        expected_tag_path = os.path.join(temp_dir, "tag_registry.json")
-        assert tag_registry.get_tag_registry_path() == os.path.abspath(expected_tag_path)
+        expected_path = os.path.join(temp_dir, "events_registry.json")
+        assert tag_registry.get_tag_registry_path() == os.path.abspath(expected_path)
     
     def test_tag_registry_default_structure(self, temp_dir):
         """Test that tag registry creates default structure when file doesn't exist"""
         media_registry_path = os.path.join(temp_dir, "events_registry.json")
         tag_registry = TagRegistry(media_registry_path)
         
-        # Load should create default structure
-        data = tag_registry.load()
-        
-        assert 'tags' in data
-        assert 'media_tags' in data
-        assert 'tag_categories' in data
-        assert 'version' in data
-        assert data['version'] == '1.0'
-        assert isinstance(data['tags'], dict)
-        assert isinstance(data['media_tags'], dict)
-        assert isinstance(data['tag_categories'], dict)
+        # Load should return empty list when file doesn't exist
+        data = tag_registry.load_registry()
+        assert isinstance(data, list)
+        assert len(data) == 0
     
     def test_tag_registry_save_and_load(self, temp_dir):
-        """Test saving and loading tag registry data"""
+        """Test saving and loading events registry data"""
         media_registry_path = os.path.join(temp_dir, "events_registry.json")
         tag_registry = TagRegistry(media_registry_path)
         
         # Create test data
-        test_data = {
-            'tags': {'test_tag': {'description': 'A test tag'}},
-            'media_tags': {'events/test.jpg': ['test_tag']},
-            'tag_categories': {'test_category': {'description': 'A test category'}},
-            'version': '1.0'
-        }
+        test_data = [
+            {
+                'path': 'events/test1.jpg',
+                'original_hash': 'hash1',
+                'tags': {'test_tag': 'value1'}
+            },
+            {
+                'path': 'events/test2.jpg',
+                'original_hash': 'hash2',
+                'tags': {}
+            }
+        ]
         
         # Save data
-        success = tag_registry.save(test_data)
+        success = tag_registry.save_registry(test_data)
         assert success is True
         
         # Load data
-        loaded_data = tag_registry.load()
+        loaded_data = tag_registry.load_registry()
         assert loaded_data == test_data
     
-    def test_add_and_get_tags(self, temp_dir):
-        """Test adding and getting tags"""
+    def test_get_and_set_media_tags(self, temp_dir):
+        """Test getting and setting media tags"""
         media_registry_path = os.path.join(temp_dir, "events_registry.json")
         tag_registry = TagRegistry(media_registry_path)
         
-        # Add a tag
-        tag_info = {'description': 'A test tag', 'category': 'test'}
-        success = tag_registry.add_tag('test_tag', tag_info)
-        assert success is True
+        # Create initial registry with one entry
+        initial_data = [
+            {
+                'path': 'events/test.jpg',
+                'original_hash': 'hash1',
+                'tags': {}
+            }
+        ]
+        tag_registry.save_registry(initial_data)
         
-        # Get all tags
-        all_tags = tag_registry.get_all_tags()
-        assert 'test_tag' in all_tags
-        assert all_tags['test_tag'] == tag_info
-    
-    def test_remove_tag(self, temp_dir):
-        """Test removing tags"""
-        media_registry_path = os.path.join(temp_dir, "events_registry.json")
-        tag_registry = TagRegistry(media_registry_path)
-        
-        # Add a tag first
-        tag_info = {'description': 'A test tag'}
-        tag_registry.add_tag('test_tag', tag_info)
-        
-        # Remove the tag
-        success = tag_registry.remove_tag('test_tag')
-        assert success is True
-        
-        # Verify it's gone
-        all_tags = tag_registry.get_all_tags()
-        assert 'test_tag' not in all_tags
-    
-    def test_add_and_get_media_tags(self, temp_dir):
-        """Test adding and getting media tags"""
-        media_registry_path = os.path.join(temp_dir, "events_registry.json")
-        tag_registry = TagRegistry(media_registry_path)
-        
-        # Add tags to media
-        tags = ['tag1', 'tag2', 'tag3']
-        success = tag_registry.add_media_tags('events/test.jpg', tags)
+        # Set tags for media
+        tags = {'tag1': 'value1', 'tag2': 'value2'}
+        success = tag_registry.set_media_tags('events/test.jpg', tags)
         assert success is True
         
         # Get tags for specific media
-        media_tags = tag_registry.get_media_tags_for_file('events/test.jpg')
+        media_tags = tag_registry.get_media_tags('events/test.jpg')
         assert media_tags == tags
-        
-        # Get all media tags
-        all_media_tags = tag_registry.get_media_tags()
-        assert 'events/test.jpg' in all_media_tags
-        assert all_media_tags['events/test.jpg'] == tags
-    
-    def test_remove_media_tags(self, temp_dir):
-        """Test removing media tags"""
-        media_registry_path = os.path.join(temp_dir, "events_registry.json")
-        tag_registry = TagRegistry(media_registry_path)
-        
-        # Add tags first
-        tags = ['tag1', 'tag2']
-        tag_registry.add_media_tags('events/test.jpg', tags)
-        
-        # Remove tags
-        success = tag_registry.remove_media_tags('events/test.jpg')
-        assert success is True
-        
-        # Verify they're gone
-        media_tags = tag_registry.get_media_tags_for_file('events/test.jpg')
-        assert media_tags == []
-    
-    def test_add_and_get_tag_categories(self, temp_dir):
-        """Test adding and getting tag categories"""
-        media_registry_path = os.path.join(temp_dir, "events_registry.json")
-        tag_registry = TagRegistry(media_registry_path)
-        
-        # Add a category
-        category_info = {'description': 'A test category', 'color': '#ff0000'}
-        success = tag_registry.add_tag_category('test_category', category_info)
-        assert success is True
-        
-        # Get all categories
-        all_categories = tag_registry.get_tag_categories()
-        assert 'test_category' in all_categories
-        assert all_categories['test_category'] == category_info
-    
-    def test_remove_tag_category(self, temp_dir):
-        """Test removing tag categories"""
-        media_registry_path = os.path.join(temp_dir, "events_registry.json")
-        tag_registry = TagRegistry(media_registry_path)
-        
-        # Add a category first
-        category_info = {'description': 'A test category'}
-        tag_registry.add_tag_category('test_category', category_info)
-        
-        # Remove the category
-        success = tag_registry.remove_tag_category('test_category')
-        assert success is True
-        
-        # Verify it's gone
-        all_categories = tag_registry.get_tag_categories()
-        assert 'test_category' not in all_categories
     
     def test_get_media_tags_for_nonexistent_file(self, temp_dir):
         """Test getting tags for a file that doesn't have any"""
@@ -164,23 +88,130 @@ class TestTagRegistry:
         tag_registry = TagRegistry(media_registry_path)
         
         # Get tags for nonexistent file
-        tags = tag_registry.get_media_tags_for_file('events/nonexistent.jpg')
-        assert tags == []
+        tags = tag_registry.get_media_tags('events/nonexistent.jpg')
+        assert tags == {}
     
-    def test_remove_nonexistent_tag(self, temp_dir):
-        """Test removing a tag that doesn't exist"""
+    def test_set_media_tags_for_nonexistent_file(self, temp_dir):
+        """Test setting tags for a file that doesn't exist in registry"""
         media_registry_path = os.path.join(temp_dir, "events_registry.json")
         tag_registry = TagRegistry(media_registry_path)
         
-        # Try to remove nonexistent tag
-        success = tag_registry.remove_tag('nonexistent_tag')
-        assert success is False
+        # Set tags for nonexistent file
+        tags = {'tag1': 'value1'}
+        success = tag_registry.set_media_tags('events/newfile.jpg', tags)
+        assert success is True
+        
+        # Verify the file was added to registry
+        registry_data = tag_registry.load_registry()
+        assert len(registry_data) == 1
+        assert registry_data[0]['path'] == 'events/newfile.jpg'
+        assert registry_data[0]['tags'] == tags
     
-    def test_remove_nonexistent_media_tags(self, temp_dir):
-        """Test removing tags for media that doesn't have any"""
+    def test_get_tag_config(self, temp_dir):
+        """Test loading tag configuration from YAML"""
         media_registry_path = os.path.join(temp_dir, "events_registry.json")
         tag_registry = TagRegistry(media_registry_path)
         
-        # Try to remove tags for nonexistent media
-        success = tag_registry.remove_media_tags('events/nonexistent.jpg')
-        assert success is False
+        # Create a test YAML file
+        yaml_path = os.path.join(temp_dir, "events_tags.yaml")
+        test_config = {
+            'tags': {
+                'girls': {
+                    'desc': 'Number of girls in the scene.',
+                    'type': 'int',
+                    'values': ['0', '1', '2', '3', 'many']
+                },
+                'dance_style': {
+                    'desc': 'What style of dance is the main person doing?',
+                    'requires': 'girls > 0 || guys > 0',
+                    'values': ['shuffle', 'swing', 'salsa', 'tango']
+                }
+            }
+        }
+        
+        with open(yaml_path, 'w') as f:
+            yaml.dump(test_config, f)
+        
+        # Test loading the config
+        config = tag_registry.get_tag_config()
+        assert 'tags' in config
+        assert 'girls' in config['tags']
+        assert 'dance_style' in config['tags']
+        assert config['tags']['girls']['desc'] == 'Number of girls in the scene.'
+        assert config['tags']['dance_style']['requires'] == 'girls > 0 || guys > 0'
+    
+    def test_get_tag_config_nonexistent_file(self, temp_dir):
+        """Test loading tag configuration when YAML file doesn't exist"""
+        media_registry_path = os.path.join(temp_dir, "events_registry.json")
+        tag_registry = TagRegistry(media_registry_path)
+        
+        # Test loading config when YAML doesn't exist
+        config = tag_registry.get_tag_config()
+        assert config == {"tags": {}}
+    
+    def test_media_tags_persistence(self, temp_dir):
+        """Test that media tags persist correctly"""
+        media_registry_path = os.path.join(temp_dir, "events_registry.json")
+        tag_registry = TagRegistry(media_registry_path)
+        
+        # Set tags for multiple media files
+        tags1 = {'girls': '2', 'action': 'dancing'}
+        tags2 = {'girls': '1', 'action': 'existing'}
+        
+        tag_registry.set_media_tags('events/file1.jpg', tags1)
+        tag_registry.set_media_tags('events/file2.jpg', tags2)
+        
+        # Create new instance to test persistence
+        tag_registry2 = TagRegistry(media_registry_path)
+        
+        # Verify tags are still there
+        loaded_tags1 = tag_registry2.get_media_tags('events/file1.jpg')
+        loaded_tags2 = tag_registry2.get_media_tags('events/file2.jpg')
+        
+        assert loaded_tags1 == tags1
+        assert loaded_tags2 == tags2
+    
+    def test_ensure_tags_field_exists(self, temp_dir):
+        """Test that tags field is automatically added to existing entries"""
+        media_registry_path = os.path.join(temp_dir, "events_registry.json")
+        tag_registry = TagRegistry(media_registry_path)
+        
+        # Create registry data without tags field
+        initial_data = [
+            {
+                'path': 'events/test.jpg',
+                'original_hash': 'hash1'
+            }
+        ]
+        
+        with open(media_registry_path, 'w') as f:
+            json.dump(initial_data, f)
+        
+        # Load registry - should add tags field
+        loaded_data = tag_registry.load_registry()
+        assert len(loaded_data) == 1
+        assert 'tags' in loaded_data[0]
+        assert loaded_data[0]['tags'] == {}
+    
+    def test_remove_media_tags(self, temp_dir):
+        """Test removing all tags from a media file"""
+        media_registry_path = os.path.join(temp_dir, "events_registry.json")
+        tag_registry = TagRegistry(media_registry_path)
+        
+        # Create initial registry with tags
+        initial_data = [
+            {
+                'path': 'events/test.jpg',
+                'original_hash': 'hash1',
+                'tags': {'tag1': 'value1', 'tag2': 'value2'}
+            }
+        ]
+        tag_registry.save_registry(initial_data)
+        
+        # Remove tags
+        success = tag_registry.remove_media_tags('events/test.jpg')
+        assert success is True
+        
+        # Verify tags are removed
+        media_tags = tag_registry.get_media_tags('events/test.jpg')
+        assert media_tags == {}

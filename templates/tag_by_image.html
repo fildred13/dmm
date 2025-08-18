@@ -1,94 +1,802 @@
 {% extends "base.html" %}
 
-{% block title %}Tag By Image - Media Management Tool{% endblock %}
+{% block title %}Tag By Image{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tag-by-image-layout {
+        display: flex;
+        gap: 1.5rem;
+        height: calc(100vh - 250px);
+        min-height: 500px;
+        max-height: 900px;
+    }
+
+    .tag-sidebar {
+        flex: 0 0 400px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .tag-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .media-info {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .media-counter {
+        font-size: 1rem;
+        color: #667eea;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .media-filename {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        word-break: break-word;
+    }
+
+    .media-path {
+        color: #666;
+        font-family: monospace;
+        font-size: 0.8rem;
+        background: rgba(0, 0, 0, 0.05);
+        padding: 0.4rem;
+        border-radius: 4px;
+        word-break: break-all;
+        margin-bottom: 0.5rem;
+    }
+
+    .media-dimensions {
+        font-size: 0.9rem;
+        color: #667eea;
+        font-weight: 500;
+    }
+
+    .dimensions-text {
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .tagging-panel {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 1.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .tagging-panel h3 {
+        color: #333;
+        margin-bottom: 0.5rem;
+        font-size: 1.2rem;
+        text-align: center;
+    }
+
+    .current-tag-info {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .current-tag-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+
+    .current-tag-description {
+        color: #666;
+        font-size: 1rem;
+        line-height: 1.4;
+        margin-bottom: 1rem;
+    }
+
+    .tag-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .tag-option {
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .tag-option:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .tag-option.selected {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .tag-option.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #f5f5f5;
+    }
+
+    .completion-status {
+        text-align: center;
+        padding: 1rem;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 8px;
+        margin-top: auto;
+    }
+
+    .completion-status h4 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .completion-status p {
+        color: #666;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .navigation {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        flex-shrink: 0;
+    }
+
+    .nav-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-btn:hover:not(:disabled) {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .nav-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .media-display {
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 16px;
+        padding: 1rem;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .media-display img,
+    .media-display video {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    .no-media {
+        color: #666;
+        text-align: center;
+        font-size: 1.1rem;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .no-tags-message {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 2rem;
+    }
+
+    .skip-btn {
+        background: rgba(108, 117, 125, 0.9);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-top: 1rem;
+    }
+
+    .skip-btn:hover {
+        background: rgba(108, 117, 125, 1);
+        transform: translateY(-1px);
+    }
+
+    .progress-indicator {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #667eea;
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        font-size: 0.9rem;
+        color: #666;
+        text-align: center;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <h1>Tag By Image</h1>
-        <p>Tag media files by viewing and selecting images.</p>
-    </div>
+<div class="card">
+    <h1 style="text-align: center; margin-bottom: 1rem; color: #667eea;">Tag By Image</h1>
     
-    <div class="content-section">
-        <div class="placeholder-content">
-            <h2>🚧 Tag By Image - Coming Soon</h2>
-            <p>This page will allow you to:</p>
-            <ul>
-                <li>Browse through your media files visually</li>
-                <li>View images and videos in a gallery format</li>
-                <li>Select multiple files for batch tagging</li>
-                <li>Apply tags to individual or multiple files</li>
-                <li>See existing tags on files</li>
-                <li>Quick tag suggestions based on content</li>
-            </ul>
-            <p><strong>Note:</strong> This interface will provide an intuitive way to tag your media by seeing what you're tagging.</p>
+    <div class="tag-by-image-layout">
+        <div class="tag-sidebar">
+            <div id="mediaInfo" class="media-info" style="display: none;">
+                <div class="media-counter" id="mediaCounter"></div>
+                <div class="media-filename" id="mediaFilename"></div>
+                <div class="media-path" id="mediaPath"></div>
+                <div class="media-dimensions" id="mediaDimensions" style="display: none;">
+                    <span class="dimensions-text">
+                        <span id="mediaWidth">-</span> × <span id="mediaHeight">-</span>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="progress-indicator" id="progressIndicator" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText"></div>
+            </div>
+            
+            <div class="tagging-panel" id="taggingPanel" style="display: none;">
+                <h3>Current Question</h3>
+                <div class="current-tag-info">
+                    <div class="current-tag-name" id="currentTagName"></div>
+                    <div class="current-tag-description" id="currentTagDescription"></div>
+                </div>
+                
+                <div class="tag-options" id="tagOptions">
+                    <!-- Tag options will be populated here -->
+                </div>
+                
+                <button class="skip-btn" id="skipBtn" onclick="skipCurrentTag()" style="display: none;">
+                    Skip This Tag
+                </button>
+            </div>
+            
+            <div class="completion-status" id="completionStatus" style="display: none;">
+                <h4>All Tags Complete!</h4>
+                <p id="completionText"></p>
+            </div>
+            
+            <div class="navigation" id="navigation" style="display: none;">
+                <button class="nav-btn" id="prevBtn" onclick="previousMedia()">‹</button>
+                <button class="nav-btn" id="nextBtn" onclick="nextMedia()">›</button>
+            </div>
+        </div>
+        
+        <div class="tag-main">
+            <div class="media-display" id="mediaDisplay">
+                <div class="no-media">No media files found. Upload some files first!</div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
+{% block extra_js %}
+<script>
+let mediaList = [];
+let currentIndex = 0;
+let tagConfig = {};
+let currentTags = {};
+let allTags = [];
+let currentTagIndex = 0;
+
+// Load media list and tag configuration on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadMediaList();
+    loadTagConfiguration();
+});
+
+async function loadMediaList() {
+    try {
+        const response = await fetch('/api/media');
+        mediaList = await response.json();
+        
+        if (mediaList.length > 0) {
+            showMedia(0);
+            document.getElementById('navigation').style.display = 'flex';
+        } else {
+            document.getElementById('mediaDisplay').innerHTML = 
+                '<div class="no-media">No media files found. Upload some files first!</div>';
+        }
+    } catch (error) {
+        console.error('Error loading media list:', error);
+        document.getElementById('mediaDisplay').innerHTML = 
+            '<div class="no-media">Error loading media files.</div>';
+    }
 }
 
-.page-header {
-    text-align: center;
-    margin-bottom: 3rem;
-    color: white;
+async function loadTagConfiguration() {
+    try {
+        const response = await fetch('/api/tags/config');
+        tagConfig = await response.json();
+        console.log('Loaded tag configuration:', tagConfig);
+        
+        // Extract all tags in order from the YAML
+        if (tagConfig.tags) {
+            allTags = Object.keys(tagConfig.tags);
+        }
+    } catch (error) {
+        console.error('Error loading tag configuration:', error);
+        tagConfig = { tags: {} };
+        allTags = [];
+    }
 }
 
-.page-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+async function showMedia(index) {
+    if (index < 0 || index >= mediaList.length) return;
+    
+    // Stop any currently playing video before switching
+    const currentVideo = document.querySelector('#mediaDisplay video');
+    if (currentVideo) {
+        currentVideo.pause();
+        currentVideo.currentTime = 0;
+    }
+    
+    currentIndex = index;
+    const media = mediaList[index];
+    
+    // Update navigation buttons
+    document.getElementById('prevBtn').disabled = index === 0;
+    document.getElementById('nextBtn').disabled = index === mediaList.length - 1;
+    
+    // Update media info
+    document.getElementById('mediaInfo').style.display = 'block';
+    document.getElementById('mediaCounter').textContent = `${index + 1} of ${mediaList.length}`;
+    document.getElementById('mediaFilename').textContent = media.path.split('/').pop();
+    document.getElementById('mediaPath').textContent = media.path;
+    
+    // Load dimensions if available
+    try {
+        const mediaResponse = await fetch(`/api/media/${index}`);
+        const mediaInfo = await mediaResponse.json();
+        
+        if (mediaInfo.width && mediaInfo.height) {
+            document.getElementById('mediaDimensions').style.display = 'block';
+            document.getElementById('mediaWidth').textContent = mediaInfo.width;
+            document.getElementById('mediaHeight').textContent = mediaInfo.height;
+        } else {
+            document.getElementById('mediaDimensions').style.display = 'none';
+        }
+    } catch (error) {
+        console.warn('Could not load media dimensions:', error);
+        document.getElementById('mediaDimensions').style.display = 'none';
+    }
+    
+    // Load current tags for this media
+    await loadCurrentTags(media.path);
+    
+    // Display media
+    displayMedia(media);
+    
+    // Start the tagging process
+    startTaggingProcess();
 }
 
-.page-header p {
-    font-size: 1.1rem;
-    opacity: 0.9;
+function displayMedia(media) {
+    const mediaDisplay = document.getElementById('mediaDisplay');
+    
+    // Determine if it's an image or video
+    const filename = media.path.toLowerCase();
+    const isVideo = filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.gif');
+    
+    if (isVideo) {
+        const video = document.createElement('video');
+        video.src = '/' + media.path;
+        video.controls = true;
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.className = 'fade-in';
+        
+        // Enable audio after video starts playing
+        video.addEventListener('play', () => {
+            setTimeout(() => {
+                video.muted = false;
+            }, 100);
+        });
+        
+        video.onloadstart = () => {
+            mediaDisplay.innerHTML = '';
+            mediaDisplay.appendChild(video);
+        };
+        video.onerror = () => {
+            mediaDisplay.innerHTML = 
+                '<div class="no-media">Error loading video file.</div>';
+        };
+    } else {
+        const img = document.createElement('img');
+        img.src = '/' + media.path;
+        img.className = 'fade-in';
+        img.onload = () => {
+            mediaDisplay.innerHTML = '';
+            mediaDisplay.appendChild(img);
+        };
+        img.onerror = () => {
+            mediaDisplay.innerHTML = 
+                '<div class="no-media">Error loading image file.</div>';
+        };
+    }
 }
 
-.content-section {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
+async function loadCurrentTags(mediaPath) {
+    try {
+        const response = await fetch(`/api/tags/media/${encodeURIComponent(mediaPath)}`);
+        currentTags = await response.json();
+    } catch (error) {
+        console.warn('Could not load current tags:', error);
+        currentTags = {};
+    }
 }
 
-.placeholder-content {
-    text-align: center;
-    padding: 3rem 1rem;
+function startTaggingProcess() {
+    currentTagIndex = 0;
+    showNextTag();
 }
 
-.placeholder-content h2 {
-    color: #667eea;
-    margin-bottom: 1.5rem;
-    font-size: 1.8rem;
+function showNextTag() {
+    const nextTag = findNextUnansweredTag();
+    
+    if (nextTag) {
+        showTagQuestion(nextTag);
+        updateProgress();
+    } else {
+        showCompletionStatus();
+    }
 }
 
-.placeholder-content p {
-    margin-bottom: 1rem;
-    color: #555;
-    line-height: 1.6;
+function findNextUnansweredTag() {
+    for (let i = 0; i < allTags.length; i++) {
+        const tagName = allTags[i];
+        const tagInfo = tagConfig.tags[tagName];
+        
+        // Skip if already answered
+        if (currentTags[tagName] !== undefined && currentTags[tagName] !== null) {
+            continue;
+        }
+        
+        // Check if tag is applicable based on requires condition
+        if (isTagApplicable(tagName, tagInfo)) {
+            return { name: tagName, info: tagInfo };
+        }
+    }
+    return null;
 }
 
-.placeholder-content ul {
-    text-align: left;
-    max-width: 500px;
-    margin: 1.5rem auto;
-    color: #555;
+function isTagApplicable(tagName, tagInfo) {
+    if (!tagInfo.requires) {
+        return true; // No requirements, always applicable
+    }
+    
+    // Parse and evaluate the requires condition
+    return evaluateCondition(tagInfo.requires);
 }
 
-.placeholder-content li {
-    margin-bottom: 0.5rem;
-    padding-left: 0.5rem;
+function evaluateCondition(condition) {
+    if (!condition) return true;
+    
+    const trimmed = condition.trim();
+    
+    // Handle OR conditions (||)
+    if (trimmed.includes('||')) {
+        const parts = trimmed.split('||').map(p => p.trim());
+        return parts.some(part => evaluateSingleCondition(part));
+    }
+    
+    // Handle AND conditions (&&)
+    if (trimmed.includes('&&')) {
+        const parts = trimmed.split('&&').map(p => p.trim());
+        return parts.every(part => evaluateSingleCondition(part));
+    }
+    
+    // Single condition
+    return evaluateSingleCondition(trimmed);
 }
 
-.placeholder-content strong {
-    color: #667eea;
+function evaluateSingleCondition(condition) {
+    const trimmed = condition.trim();
+    
+    // Handle basic comparisons
+    if (trimmed.includes('>')) {
+        const [variable, value] = trimmed.split('>').map(p => p.trim());
+        const currentValue = parseInt(currentTags[variable]) || 0;
+        return currentValue > parseInt(value);
+    }
+    
+    if (trimmed.includes('<')) {
+        const [variable, value] = trimmed.split('<').map(p => p.trim());
+        const currentValue = parseInt(currentTags[variable]) || 0;
+        return currentValue < parseInt(value);
+    }
+    
+    if (trimmed.includes('>=')) {
+        const [variable, value] = trimmed.split('>=').map(p => p.trim());
+        const currentValue = parseInt(currentTags[variable]) || 0;
+        return currentValue >= parseInt(value);
+    }
+    
+    if (trimmed.includes('<=')) {
+        const [variable, value] = trimmed.split('<=').map(p => p.trim());
+        const currentValue = parseInt(currentTags[variable]) || 0;
+        return currentValue <= parseInt(value);
+    }
+    
+    if (trimmed.includes('==')) {
+        const [variable, value] = trimmed.split('==').map(p => p.trim());
+        const currentValue = currentTags[variable];
+        return currentValue == value;
+    }
+    
+    if (trimmed.includes('!=')) {
+        const [variable, value] = trimmed.split('!=').map(p => p.trim());
+        const currentValue = currentTags[variable];
+        return currentValue != value;
+    }
+    
+    // Handle boolean checks (e.g., "girls" means girls has a truthy value)
+    const currentValue = currentTags[trimmed];
+    return currentValue && currentValue !== '0' && currentValue !== 0;
 }
-</style>
+
+function showTagQuestion(tag) {
+    document.getElementById('taggingPanel').style.display = 'block';
+    document.getElementById('completionStatus').style.display = 'none';
+    document.getElementById('progressIndicator').style.display = 'block';
+    
+    document.getElementById('currentTagName').textContent = tag.name;
+    document.getElementById('currentTagDescription').textContent = tag.info.desc || tag.info.description || 'No description available';
+    
+    const tagOptionsContainer = document.getElementById('tagOptions');
+    let html = '';
+    
+    if (tag.info.values) {
+        // Enum tag with predefined values
+        for (const value of tag.info.values) {
+            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+        }
+    } else if (tag.info.type === 'int') {
+        // Integer tag - provide common options
+        const options = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        for (const value of options) {
+            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+        }
+    } else {
+        // Default to boolean-like options
+        html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'yes')">Yes</div>`;
+        html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'no')">No</div>`;
+    }
+    
+    tagOptionsContainer.innerHTML = html;
+    
+    // Show skip button
+    document.getElementById('skipBtn').style.display = 'block';
+}
+
+function updateProgress() {
+    const totalApplicableTags = countApplicableTags();
+    const completedTags = countCompletedTags();
+    const progressPercent = totalApplicableTags > 0 ? (completedTags / totalApplicableTags) * 100 : 0;
+    
+    document.getElementById('progressFill').style.width = `${progressPercent}%`;
+    document.getElementById('progressText').textContent = 
+        `${completedTags}/${totalApplicableTags} tags completed`;
+}
+
+function countApplicableTags() {
+    let count = 0;
+    for (const tagName of allTags) {
+        const tagInfo = tagConfig.tags[tagName];
+        if (isTagApplicable(tagName, tagInfo)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function countCompletedTags() {
+    let count = 0;
+    for (const tagName of allTags) {
+        const tagInfo = tagConfig.tags[tagName];
+        if (isTagApplicable(tagName, tagInfo) && 
+            currentTags[tagName] !== undefined && 
+            currentTags[tagName] !== null) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function showCompletionStatus() {
+    document.getElementById('taggingPanel').style.display = 'none';
+    document.getElementById('progressIndicator').style.display = 'none';
+    document.getElementById('completionStatus').style.display = 'block';
+    
+    const totalApplicableTags = countApplicableTags();
+    const completedTags = countCompletedTags();
+    
+    document.getElementById('completionText').textContent = 
+        `All ${completedTags} applicable tags completed for this media!`;
+    
+    // Auto-advance to next image after a short delay
+    setTimeout(() => {
+        if (currentIndex < mediaList.length - 1) {
+            nextMedia();
+        }
+    }, 2000);
+}
+
+async function selectTagValue(tagName, value) {
+    // Save the tag value
+    currentTags[tagName] = value;
+    
+    // Save to server
+    await saveCurrentTags();
+    
+    // Show next tag or completion
+    showNextTag();
+}
+
+async function skipCurrentTag() {
+    // Mark current tag as skipped (set to null)
+    const currentTag = findNextUnansweredTag();
+    if (currentTag) {
+        currentTags[currentTag.name] = null;
+        await saveCurrentTags();
+        showNextTag();
+    }
+}
+
+async function saveCurrentTags() {
+    if (mediaList.length === 0) return;
+    
+    const currentMedia = mediaList[currentIndex];
+    
+    try {
+        const response = await fetch(`/api/tags/media/${encodeURIComponent(currentMedia.path)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(currentTags)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save tags');
+        }
+    } catch (error) {
+        console.error('Error saving tags:', error);
+        // Could show a user-friendly error message here
+    }
+}
+
+async function previousMedia() {
+    if (currentIndex > 0) {
+        await showMedia(currentIndex - 1);
+    }
+}
+
+async function nextMedia() {
+    if (currentIndex < mediaList.length - 1) {
+        await showMedia(currentIndex + 1);
+    }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', async (e) => {
+    if (mediaList.length === 0) return;
+    
+    switch(e.key) {
+        case 'ArrowLeft':
+            e.preventDefault();
+            await previousMedia();
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
+            await nextMedia();
+            break;
+        case 'Escape':
+            e.preventDefault();
+            skipCurrentTag();
+            break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        case '0':
+            e.preventDefault();
+            // Quick number selection for current tag
+            const currentTag = findNextUnansweredTag();
+            if (currentTag && currentTag.info.values) {
+                const index = parseInt(e.key) - 1;
+                if (index >= 0 && index < currentTag.info.values.length) {
+                    selectTagValue(currentTag.name, currentTag.info.values[index]);
+                }
+            }
+            break;
+    }
+});
+</script>
 {% endblock %}

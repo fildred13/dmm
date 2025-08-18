@@ -96,6 +96,12 @@ class TestAppRoutes:
         assert response.status_code == 200
         assert b'Preview' in response.data
     
+    def test_tag_by_image_route(self, client):
+        """Test tag by image route"""
+        response = client.get('/tag-by-image')
+        assert response.status_code == 200
+        assert b'Tag By Image' in response.data
+    
     def test_media_list_api(self, client):
         """Test media list API"""
         response = client.get('/api/media')

@@ -265,6 +265,45 @@ def serve_media(folder_name, filename):
     return send_from_directory(app_state.media_processor.upload_folder, filename)
 
 
+@app.route('/api/tags/config')
+def get_tag_config():
+    """Get the tag configuration from the YAML file"""
+    try:
+        return jsonify(app_state.tag_registry.get_tag_config())
+    except Exception as e:
+        logger.error(f"Error loading tag configuration: {e}")
+        return jsonify({'error': 'Failed to load tag configuration'}), 500
+
+
+@app.route('/api/tags/media/<path:media_path>')
+def get_media_tags(media_path):
+    """Get tags for a specific media file"""
+    try:
+        tags = app_state.tag_registry.get_media_tags(media_path)
+        return jsonify(tags)
+    except Exception as e:
+        logger.error(f"Error getting tags for {media_path}: {e}")
+        return jsonify({'error': 'Failed to get media tags'}), 500
+
+
+@app.route('/api/tags/media/<path:media_path>', methods=['POST'])
+def save_media_tags(media_path):
+    """Save tags for a specific media file"""
+    try:
+        tags = request.get_json()
+        if tags is None:
+            return jsonify({'error': 'Invalid JSON data'}), 400
+        
+        success = app_state.tag_registry.set_media_tags(media_path, tags)
+        if success:
+            return jsonify({'success': True, 'message': 'Tags saved successfully'})
+        else:
+            return jsonify({'error': 'Failed to save tags'}), 500
+    except Exception as e:
+        logger.error(f"Error saving tags for {media_path}: {e}")
+        return jsonify({'error': 'Failed to save tags'}), 500
+
+
 # Initialize with session registry if available
 def initialize_registry():
     """Initialize the registry from session if available"""

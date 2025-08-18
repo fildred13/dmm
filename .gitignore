@@ -1,6 +1,7 @@
 media/
 events/
 events_registry.json
+events_tags.yaml
 *.code-workspace
 .dmm_config.json
 tag_registry.json
