@@ -123,8 +123,13 @@ class TestTagRegistry:
                 },
                 'dance_style': {
                     'desc': 'What style of dance is the main person doing?',
-                    'requires': 'girls > 0 || guys > 0',
-                    'values': ['shuffle', 'swing', 'salsa', 'tango']
+                    'req': 'girls > 0 || guys > 0',
+                    'values': [
+                        {'value': 'shuffle', 'req': 'girls > 0'},
+                        {'value': 'swing', 'req': 'girls > 0 || guys > 0'},
+                        {'value': 'salsa', 'req': 'girls > 0 && guys > 0'},
+                        {'value': 'tango', 'req': 'girls > 0 && guys > 0'}
+                    ]
                 }
             }
         }
@@ -138,7 +143,7 @@ class TestTagRegistry:
         assert 'girls' in config['tags']
         assert 'dance_style' in config['tags']
         assert config['tags']['girls']['desc'] == 'Number of girls in the scene.'
-        assert config['tags']['dance_style']['requires'] == 'girls > 0 || guys > 0'
+        assert config['tags']['dance_style']['req'] == 'girls > 0 || guys > 0'
     
     def test_get_tag_config_nonexistent_file(self, temp_dir):
         """Test loading tag configuration when YAML file doesn't exist"""

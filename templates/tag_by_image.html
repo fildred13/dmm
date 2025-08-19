@@ -358,6 +358,7 @@ let tagConfig = {};
 let currentTags = {};
 let allTags = [];
 let currentTagIndex = 0;
+let tagDependencies = {}; // Track dependencies for each tag
 
 // Load media list and tag configuration on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -393,12 +394,96 @@ async function loadTagConfiguration() {
         // Extract all tags in order from the YAML
         if (tagConfig.tags) {
             allTags = Object.keys(tagConfig.tags);
+            // Analyze dependencies for each tag
+            analyzeTagDependencies();
         }
     } catch (error) {
         console.error('Error loading tag configuration:', error);
         tagConfig = { tags: {} };
         allTags = [];
+        tagDependencies = {};
     }
+}
+
+function analyzeTagDependencies() {
+    tagDependencies = {};
+    
+    for (const tagName of allTags) {
+        const tagInfo = tagConfig.tags[tagName];
+        const dependencies = new Set();
+        
+        // Check tag-level requirements
+        if (tagInfo.req) {
+            const tagDeps = extractVariablesFromCondition(tagInfo.req);
+            tagDeps.forEach(dep => dependencies.add(dep));
+        }
+        
+        // Check value-level requirements
+        if (tagInfo.values) {
+            for (const valueItem of tagInfo.values) {
+                if (typeof valueItem === 'object' && valueItem.req) {
+                    const valueDeps = extractVariablesFromCondition(valueItem.req);
+                    valueDeps.forEach(dep => dependencies.add(dep));
+                }
+            }
+        }
+        
+        tagDependencies[tagName] = Array.from(dependencies);
+    }
+    
+    console.log('Tag dependencies:', tagDependencies);
+}
+
+function extractVariablesFromCondition(condition) {
+    const variables = new Set();
+    
+    if (!condition) return variables;
+    
+    // Remove quotes around string literals
+    const cleanCondition = condition.replace(/"[^"]*"/g, 'STRING_LITERAL');
+    
+    // Split by operators to find variables
+    const parts = cleanCondition.split(/[><=!&|()\s]+/).filter(part => part.length > 0);
+    
+    for (const part of parts) {
+        // Skip numbers, operators, and string literals
+        if (!/^\d+$/.test(part) && 
+            !/^(==|!=|>=|<=|>|<|&&|\|\||\(|\))$/.test(part) &&
+            part !== 'STRING_LITERAL') {
+            variables.add(part);
+        }
+    }
+    
+    return variables;
+}
+
+function getOrderedTags() {
+    const orderedTags = [];
+    const resolvedTags = new Set();
+    
+    // Process tags in their original order
+    for (const tagName of allTags) {
+        const dependencies = tagDependencies[tagName] || [];
+        const allDependenciesResolved = dependencies.every(dep => resolvedTags.has(dep));
+        
+        if (allDependenciesResolved) {
+            orderedTags.push(tagName);
+            resolvedTags.add(tagName);
+        } else {
+            // Skip this tag for now, it will be processed later when dependencies are resolved
+            console.log(`Skipping ${tagName} - dependencies not resolved: ${dependencies.filter(dep => !resolvedTags.has(dep)).join(', ')}`);
+        }
+    }
+    
+    // Check for any unresolved tags (circular dependencies)
+    const unresolvedTags = allTags.filter(tag => !resolvedTags.has(tag));
+    if (unresolvedTags.length > 0) {
+        console.warn('Circular dependency detected in tags:', unresolvedTags);
+        // Add unresolved tags at the end in original order
+        orderedTags.push(...unresolvedTags);
+    }
+    
+    return orderedTags;
 }
 
 async function showMedia(index) {
@@ -524,8 +609,10 @@ function showNextTag() {
 }
 
 function findNextUnansweredTag() {
-    for (let i = 0; i < allTags.length; i++) {
-        const tagName = allTags[i];
+    const orderedTags = getOrderedTags();
+    
+    for (let i = 0; i < orderedTags.length; i++) {
+        const tagName = orderedTags[i];
         const tagInfo = tagConfig.tags[tagName];
         
         // Skip if already answered
@@ -533,7 +620,17 @@ function findNextUnansweredTag() {
             continue;
         }
         
-        // Check if tag is applicable based on requires condition
+        // Check if all dependencies are satisfied
+        const dependencies = tagDependencies[tagName] || [];
+        const allDependenciesSatisfied = dependencies.every(dep => 
+            currentTags[dep] !== undefined && currentTags[dep] !== null
+        );
+        
+        if (!allDependenciesSatisfied) {
+            continue; // Skip this tag until dependencies are resolved
+        }
+        
+        // Check if tag is applicable based on req condition
         if (isTagApplicable(tagName, tagInfo)) {
             return { name: tagName, info: tagInfo };
         }
@@ -542,12 +639,12 @@ function findNextUnansweredTag() {
 }
 
 function isTagApplicable(tagName, tagInfo) {
-    if (!tagInfo.requires) {
+    if (!tagInfo.req) {
         return true; // No requirements, always applicable
     }
     
-    // Parse and evaluate the requires condition
-    return evaluateCondition(tagInfo.requires);
+    // Parse and evaluate the req condition
+    return evaluateCondition(tagInfo.req);
 }
 
 function evaluateCondition(condition) {
@@ -628,9 +725,32 @@ function showTagQuestion(tag) {
     let html = '';
     
     if (tag.info.values) {
-        // Enum tag with predefined values
-        for (const value of tag.info.values) {
-            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+        // Handle conditional values with 'req' clauses
+        for (const valueItem of tag.info.values) {
+            let value, condition;
+            
+            if (typeof valueItem === 'string') {
+                // Simple string value (backward compatibility)
+                value = valueItem;
+                condition = null;
+            } else if (valueItem.value && valueItem.req) {
+                // Conditional value with 'req' clause
+                value = valueItem.value;
+                condition = valueItem.req;
+            } else if (valueItem.value) {
+                // Value without condition
+                value = valueItem.value;
+                condition = null;
+            } else {
+                // Fallback for other formats
+                value = valueItem;
+                condition = null;
+            }
+            
+            // Check if this value should be shown based on condition
+            if (condition === null || evaluateCondition(condition)) {
+                html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+            }
         }
     } else if (tag.info.type === 'int') {
         // Integer tag - provide common options
@@ -661,10 +781,19 @@ function updateProgress() {
 }
 
 function countApplicableTags() {
+    const orderedTags = getOrderedTags();
     let count = 0;
-    for (const tagName of allTags) {
+    
+    for (const tagName of orderedTags) {
         const tagInfo = tagConfig.tags[tagName];
-        if (isTagApplicable(tagName, tagInfo)) {
+        const dependencies = tagDependencies[tagName] || [];
+        
+        // Check if all dependencies are satisfied
+        const allDependenciesSatisfied = dependencies.every(dep => 
+            currentTags[dep] !== undefined && currentTags[dep] !== null
+        );
+        
+        if (allDependenciesSatisfied && isTagApplicable(tagName, tagInfo)) {
             count++;
         }
     }
@@ -672,10 +801,20 @@ function countApplicableTags() {
 }
 
 function countCompletedTags() {
+    const orderedTags = getOrderedTags();
     let count = 0;
-    for (const tagName of allTags) {
+    
+    for (const tagName of orderedTags) {
         const tagInfo = tagConfig.tags[tagName];
-        if (isTagApplicable(tagName, tagInfo) && 
+        const dependencies = tagDependencies[tagName] || [];
+        
+        // Check if all dependencies are satisfied
+        const allDependenciesSatisfied = dependencies.every(dep => 
+            currentTags[dep] !== undefined && currentTags[dep] !== null
+        );
+        
+        if (allDependenciesSatisfied && 
+            isTagApplicable(tagName, tagInfo) && 
             currentTags[tagName] !== undefined && 
             currentTags[tagName] !== null) {
             count++;
@@ -790,9 +929,33 @@ document.addEventListener('keydown', async (e) => {
             // Quick number selection for current tag
             const currentTag = findNextUnansweredTag();
             if (currentTag && currentTag.info.values) {
+                // Get available values (filtered by conditions)
+                const availableValues = [];
+                for (const valueItem of currentTag.info.values) {
+                    let value, condition;
+                    
+                    if (typeof valueItem === 'string') {
+                        value = valueItem;
+                        condition = null;
+                    } else if (valueItem.value && valueItem.req) {
+                        value = valueItem.value;
+                        condition = valueItem.req;
+                    } else if (valueItem.value) {
+                        value = valueItem.value;
+                        condition = null;
+                    } else {
+                        value = valueItem;
+                        condition = null;
+                    }
+                    
+                    if (condition === null || evaluateCondition(condition)) {
+                        availableValues.push(value);
+                    }
+                }
+                
                 const index = parseInt(e.key) - 1;
-                if (index >= 0 && index < currentTag.info.values.length) {
-                    selectTagValue(currentTag.name, currentTag.info.values[index]);
+                if (index >= 0 && index < availableValues.length) {
+                    selectTagValue(currentTag.name, availableValues[index]);
                 }
             }
             break;
