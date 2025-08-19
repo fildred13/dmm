@@ -740,17 +740,23 @@ async function syncProcessingItems() {
                 updateItemToSuccess(item, processedFile);
             } else {
                 console.log(`❌ No processed file found`);
-                // Check if it's been more than 30 seconds since upload started
+                // Check if it's been more than 60 seconds since upload started (longer for video files)
                 const uploadTime = item.dataset.uploadTime;
                 const timeSinceUpload = uploadTime ? (Date.now() - parseInt(uploadTime)) : 0;
                 console.log(`Time since upload: ${timeSinceUpload}ms`);
                 
-                if (uploadTime && timeSinceUpload > 30000) {
-                    console.log(`⏰ Timeout detected, marking as error`);
+                // Get file extension to determine timeout
+                const fileName = item.querySelector('.file-name').textContent;
+                const fileExtension = fileName.split('.').pop().toLowerCase();
+                const isVideo = ['mp4', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'webm'].includes(fileExtension);
+                const timeoutDuration = isVideo ? 60000 : 30000; // 60 seconds for videos, 30 for images
+                
+                if (uploadTime && timeSinceUpload > timeoutDuration) {
+                    console.log(`⏰ Timeout detected (${timeoutDuration}ms), marking as error`);
                     // Likely failed - update to error state
                     updateItemToError(item, 'Processing timeout - file may have failed');
                 } else {
-                    console.log(`⏳ Still within timeout window, keeping as processing`);
+                    console.log(`⏳ Still within timeout window (${timeoutDuration}ms), keeping as processing`);
                 }
             }
         }
@@ -776,6 +782,25 @@ function findProcessedFile(originalFileName, originalExtension, mediaList) {
     
     console.log(`Looking for file: ${originalFileName} (base: ${baseName}, ext: ${originalExtension})`);
     console.log(`Available media files:`, mediaList.map(m => m.path.split('/').pop()));
+    
+    // Define conversions for debugging
+    const conversions = {
+        'jpg': ['jpg', 'png'],
+        'jpeg': ['jpg', 'png'],
+        'png': ['png'],
+        'gif': ['png', 'webm'],
+        'webp': ['png', 'webm'],
+        'bmp': ['png'],
+        'tiff': ['png'],
+        'mp4': ['webm'],
+        'avi': ['webm'],
+        'mov': ['webm'],
+        'mkv': ['webm'],
+        'flv': ['webm'],
+        'wmv': ['webm'],
+        'webm': ['webm']
+    };
+    console.log(`Format conversion check: ${originalExtension} → [${conversions[originalExtension] || 'undefined'}]`);
     
     for (const media of mediaList) {
         const mediaFileName = media.path.split('/').pop();
@@ -828,7 +853,8 @@ function isReasonableFormatConversion(originalExt, processedExt) {
         'mov': ['webm'],
         'mkv': ['webm'],
         'flv': ['webm'],
-        'wmv': ['webm']
+        'wmv': ['webm'],
+        'webm': ['webm']  // Allow webm files to remain as webm after processing
     };
     
     return conversions[originalExt] && conversions[originalExt].includes(processedExt);
