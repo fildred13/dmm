@@ -395,10 +395,33 @@ async function loadTagConfiguration() {
         if (tagConfig.tags) {
             allTags = Object.keys(tagConfig.tags);
             // Analyze dependencies for each tag
-            analyzeTagDependencies();
+            try {
+                analyzeTagDependencies();
+            } catch (error) {
+                console.error('Error analyzing tag dependencies:', error);
+                // Show error in UI
+                document.getElementById('mediaDisplay').innerHTML = `
+                    <div class="no-media" style="color: #c62828; background: #ffebee; padding: 2rem; border-radius: 8px; border: 1px solid #ef5350;">
+                        <h3>Configuration Error</h3>
+                        <p><strong>Failed to analyze tag dependencies:</strong></p>
+                        <p>${error.message}</p>
+                        <p><small>Please check your events_tags.yaml file for syntax errors.</small></p>
+                    </div>
+                `;
+                return;
+            }
         }
     } catch (error) {
         console.error('Error loading tag configuration:', error);
+        // Show error in UI
+        document.getElementById('mediaDisplay').innerHTML = `
+            <div class="no-media" style="color: #c62828; background: #ffebee; padding: 2rem; border-radius: 8px; border: 1px solid #ef5350;">
+                <h3>Configuration Error</h3>
+                <p><strong>Failed to load tag configuration:</strong></p>
+                <p>${error.message}</p>
+                <p><small>Please check your events_tags.yaml file and ensure the server is running.</small></p>
+            </div>
+        `;
         tagConfig = { tags: {} };
         allTags = [];
         tagDependencies = {};
@@ -406,55 +429,258 @@ async function loadTagConfiguration() {
 }
 
 function analyzeTagDependencies() {
-    tagDependencies = {};
-    
-    for (const tagName of allTags) {
-        const tagInfo = tagConfig.tags[tagName];
-        const dependencies = new Set();
+    try {
+        tagDependencies = {};
         
-        // Check tag-level requirements
-        if (tagInfo.req) {
-            const tagDeps = extractVariablesFromCondition(tagInfo.req);
-            tagDeps.forEach(dep => dependencies.add(dep));
-        }
-        
-        // Check value-level requirements
-        if (tagInfo.values) {
-            for (const valueItem of tagInfo.values) {
-                if (typeof valueItem === 'object' && valueItem.req) {
-                    const valueDeps = extractVariablesFromCondition(valueItem.req);
-                    valueDeps.forEach(dep => dependencies.add(dep));
+        for (const tagName of allTags) {
+            try {
+                const tagInfo = tagConfig.tags[tagName];
+                const dependencies = new Set();
+                
+                // Check tag-level requirements
+                if (tagInfo.req) {
+                    const tagDeps = extractVariablesFromCondition(tagInfo.req);
+                    tagDeps.forEach(dep => dependencies.add(dep));
                 }
+                
+                // Check value-level requirements
+                if (tagInfo.values) {
+                    for (const valueItem of tagInfo.values) {
+                        if (typeof valueItem === 'object' && valueItem.req) {
+                            const valueDeps = extractVariablesFromCondition(valueItem.req);
+                            valueDeps.forEach(dep => dependencies.add(dep));
+                        }
+                    }
+                }
+                
+                tagDependencies[tagName] = Array.from(dependencies);
+            } catch (error) {
+                console.error(`Error analyzing dependencies for tag ${tagName}:`, error);
+                // Continue with other tags, but mark this one as having an error
+                tagDependencies[tagName] = [];
+                throw new Error(`Failed to analyze dependencies for tag '${tagName}': ${error.message}`);
             }
         }
         
-        tagDependencies[tagName] = Array.from(dependencies);
+        console.log('Tag dependencies:', tagDependencies);
+    } catch (error) {
+        console.error('Error analyzing tag dependencies:', error);
+        throw new Error(`Failed to analyze tag dependencies: ${error.message}`);
     }
-    
-    console.log('Tag dependencies:', tagDependencies);
+}
+
+function tokenizeCondition(input) {
+	const tokens = [];
+	let i = 0;
+	const length = input.length;
+	const isWhitespace = c => /\s/.test(c);
+	const isDigit = c => /[0-9]/.test(c);
+	const isIdentifierStart = c => /[A-Za-z_]/.test(c);
+	const isIdentifierPart = c => /[A-Za-z0-9_]/.test(c);
+	while (i < length) {
+		const char = input[i];
+		if (isWhitespace(char)) { i++; continue; }
+		// Operators (two-char first)
+		if (i + 1 < length) {
+			const two = input.slice(i, i + 2);
+			if (two === '&&' || two === '||' || two === '==' || two === '!=' || two === '>=' || two === '<=') {
+				tokens.push({ type: 'op', value: two });
+				i += 2;
+				continue;
+			}
+		}
+		// Single char operators / parens
+		if (char === '>' || char === '<' || char === '(' || char === ')') {
+			tokens.push({ type: char === '(' || char === ')' ? (char === '(' ? 'lparen' : 'rparen') : 'op', value: char });
+			i++;
+			continue;
+		}
+		// String literal
+		if (char === '"') {
+			let j = i + 1;
+			let str = '';
+			while (j < length) {
+				if (input[j] === '"') { break; }
+				// Support escaped quotes \"
+				if (input[j] === '\\' && j + 1 < length && input[j+1] === '"') { str += '"'; j += 2; continue; }
+				str += input[j];
+				j++;
+			}
+			if (j >= length || input[j] !== '"') {
+				throw new Error('Unterminated string literal');
+			}
+			tokens.push({ type: 'string', value: str });
+			i = j + 1;
+			continue;
+		}
+		// Number
+		if (isDigit(char)) {
+			let j = i;
+			while (j < length && (isDigit(input[j]) || input[j] === '.')) j++;
+			const numStr = input.slice(i, j);
+			const num = parseFloat(numStr);
+			if (Number.isNaN(num)) {
+				throw new Error(`Invalid number: ${numStr}`);
+			}
+			tokens.push({ type: 'number', value: num });
+			i = j;
+			continue;
+		}
+		// Identifier
+		if (isIdentifierStart(char)) {
+			let j = i + 1;
+			while (j < length && isIdentifierPart(input[j])) j++;
+			const ident = input.slice(i, j);
+			tokens.push({ type: 'identifier', value: ident });
+			i = j;
+			continue;
+		}
+		throw new Error(`Unexpected character: ${char}`);
+	}
+	return tokens;
 }
 
 function extractVariablesFromCondition(condition) {
-    const variables = new Set();
-    
-    if (!condition) return variables;
-    
-    // Remove quotes around string literals
-    const cleanCondition = condition.replace(/"[^"]*"/g, 'STRING_LITERAL');
-    
-    // Split by operators to find variables
-    const parts = cleanCondition.split(/[><=!&|()\s]+/).filter(part => part.length > 0);
-    
-    for (const part of parts) {
-        // Skip numbers, operators, and string literals
-        if (!/^\d+$/.test(part) && 
-            !/^(==|!=|>=|<=|>|<|&&|\|\||\(|\))$/.test(part) &&
-            part !== 'STRING_LITERAL') {
-            variables.add(part);
-        }
-    }
-    
-    return variables;
+	const variables = new Set();
+	if (!condition) return variables;
+	try {
+		const tokens = tokenizeCondition(condition);
+		for (const t of tokens) {
+			if (t.type === 'identifier') variables.add(t.value);
+		}
+		return variables;
+	} catch (error) {
+		console.error('Error extracting variables from condition:', condition, error);
+		throw new Error(`Failed to parse condition: ${condition}`);
+	}
+}
+
+function evaluateCondition(condition) {
+	if (!condition) return true;
+	try {
+		const tokens = tokenizeCondition(condition);
+		const state = { tokens, index: 0 };
+		const result = parseOrExpression(state);
+		if (state.index !== tokens.length) {
+			throw new Error('Unexpected extra tokens at end of expression');
+		}
+		return result;
+	} catch (error) {
+		console.error('Error evaluating condition:', condition, error);
+		throw new Error(`Failed to evaluate condition: ${condition}`);
+	}
+}
+
+function parseOrExpression(state) {
+	let value = parseAndExpression(state);
+	while (matchOp(state, '||')) {
+		const rhs = parseAndExpression(state);
+		value = Boolean(value || rhs);
+	}
+	return value;
+}
+
+function parseAndExpression(state) {
+	let value = parsePrimary(state);
+	while (matchOp(state, '&&')) {
+		const rhs = parsePrimary(state);
+		value = Boolean(value && rhs);
+	}
+	return value;
+}
+
+function parsePrimary(state) {
+	if (matchType(state, 'lparen')) {
+		const value = parseOrExpression(state);
+		expectType(state, 'rparen', 'Expected closing parenthesis ")"');
+		return value;
+	}
+	return parseComparisonOrIdentifier(state);
+}
+
+function parseComparisonOrIdentifier(state) {
+	const identToken = expectType(state, 'identifier', 'Expected identifier');
+	const leftValRaw = getIdentifierValue(identToken.value);
+	// Look ahead for comparator
+	const op = peekOp(state);
+	if (op && (op === '==' || op === '!=' || op === '>=' || op === '<=' || op === '>' || op === '<')) {
+		state.index++; // consume op
+		const right = parseValue(state);
+		return compareValues(leftValRaw, right, op);
+	}
+	// Truthiness of identifier when no comparator
+	return isTruthy(leftValRaw);
+}
+
+function parseValue(state) {
+	const tok = current(state);
+	if (!tok) throw new Error('Expected value');
+	if (tok.type === 'number') { state.index++; return tok.value; }
+	if (tok.type === 'string') { state.index++; return tok.value; }
+	if (tok.type === 'identifier') { state.index++; return getIdentifierValue(tok.value); }
+	throw new Error('Expected a value (number, string, or identifier)');
+}
+
+function getIdentifierValue(name) {
+	// Read from currentTags; may be undefined
+	return currentTags ? currentTags[name] : undefined;
+}
+
+function compareValues(left, right, op) {
+	// Try numeric compare when both are numeric-like
+	const leftNum = left !== undefined && left !== null && left !== '' && !isNaN(Number(left)) ? Number(left) : null;
+	const rightNum = right !== undefined && right !== null && right !== '' && !isNaN(Number(right)) ? Number(right) : null;
+	if (op === '>' || op === '<' || op === '>=' || op === '<=') {
+		if (leftNum === null || rightNum === null) {
+			throw new Error(`Numeric comparison requires numbers: ${left} ${op} ${right}`);
+		}
+		switch (op) {
+			case '>': return leftNum > rightNum;
+			case '<': return leftNum < rightNum;
+			case '>=': return leftNum >= rightNum;
+			case '<=': return leftNum <= rightNum;
+		}
+	}
+	// Equality/inequality: if both numeric-like, compare numerically; else string compare
+	if (op === '==' || op === '!=') {
+		let result;
+		if (leftNum !== null && rightNum !== null) {
+			result = leftNum === rightNum;
+		} else {
+			result = `${left}` === `${right}`;
+		}
+		return op === '==' ? result : !result;
+	}
+	throw new Error(`Unknown operator: ${op}`);
+}
+
+function isTruthy(value) {
+	if (value === undefined || value === null) return false;
+	if (typeof value === 'number') return value !== 0;
+	if (typeof value === 'string') return value.trim() !== '' && value !== '0';
+	return Boolean(value);
+}
+
+function current(state) { return state.tokens[state.index]; }
+function matchType(state, type) {
+	const tok = current(state);
+	if (tok && tok.type === type) { state.index++; return true; }
+	return false;
+}
+function expectType(state, type, message) {
+	const tok = current(state);
+	if (!tok || tok.type !== type) { throw new Error(message || `Expected ${type}`); }
+	state.index++;
+	return tok;
+}
+function matchOp(state, op) {
+	const tok = current(state);
+	if (tok && tok.type === 'op' && tok.value === op) { state.index++; return true; }
+	return false;
+}
+function peekOp(state) {
+	const tok = current(state);
+	return tok && tok.type === 'op' ? tok.value : null;
 }
 
 function getOrderedTags() {
@@ -598,176 +824,233 @@ function startTaggingProcess() {
 }
 
 function showNextTag() {
-    const nextTag = findNextUnansweredTag();
-    
-    if (nextTag) {
-        showTagQuestion(nextTag);
-        updateProgress();
-    } else {
-        showCompletionStatus();
+    try {
+        const nextTag = findNextUnansweredTag();
+        
+        if (nextTag) {
+            const shouldShow = showTagQuestion(nextTag);
+            if (shouldShow) {
+                updateProgress();
+            } else {
+                // Tag was shown but has no valid options (all conditions unmet)
+                // Skip to the next tag
+                showNextTag();
+            }
+        } else {
+            showCompletionStatus();
+        }
+    } catch (error) {
+        console.error('Error showing next tag:', error);
+        // Display error in the UI
+        document.getElementById('taggingPanel').style.display = 'block';
+        document.getElementById('completionStatus').style.display = 'none';
+        document.getElementById('progressIndicator').style.display = 'none';
+        
+        document.getElementById('currentTagName').textContent = 'Error';
+        document.getElementById('currentTagDescription').textContent = 'An error occurred while processing tags.';
+        
+        const tagOptionsContainer = document.getElementById('tagOptions');
+        tagOptionsContainer.innerHTML = `<div class="tag-option error" style="background: #ffebee; color: #c62828; border-color: #ef5350;">
+            <strong>System Error:</strong><br>
+            ${error.message}<br><br>
+            <small>Please check the browser console for more details.</small>
+        </div>`;
+        
+        // Hide skip button since we can't proceed
+        document.getElementById('skipBtn').style.display = 'none';
     }
 }
 
 function findNextUnansweredTag() {
-    const orderedTags = getOrderedTags();
-    
-    for (let i = 0; i < orderedTags.length; i++) {
-        const tagName = orderedTags[i];
-        const tagInfo = tagConfig.tags[tagName];
+    try {
+        const orderedTags = getOrderedTags();
         
-        // Skip if already answered
-        if (currentTags[tagName] !== undefined && currentTags[tagName] !== null) {
-            continue;
+        for (let i = 0; i < orderedTags.length; i++) {
+            const tagName = orderedTags[i];
+            const tagInfo = tagConfig.tags[tagName];
+            
+            // Skip if already answered
+            if (currentTags[tagName] !== undefined && currentTags[tagName] !== null) {
+                continue;
+            }
+            
+            // Check if all dependencies are satisfied
+            const dependencies = tagDependencies[tagName] || [];
+            const allDependenciesSatisfied = dependencies.every(dep => 
+                currentTags[dep] !== undefined && currentTags[dep] !== null
+            );
+            
+            if (!allDependenciesSatisfied) {
+                continue; // Skip this tag until dependencies are resolved
+            }
+            
+            // Check if tag is applicable based on req condition
+            const tagApplicable = isTagApplicable(tagName, tagInfo);
+            if (tagApplicable === true) {
+                // Tag is applicable, check if it has any valid values
+                const hasValidValues = checkTagHasValidValues(tagName, tagInfo);
+                if (hasValidValues === true) {
+                    return { name: tagName, info: tagInfo };
+                }
+                // If hasValidValues is false, skip this tag (no valid options)
+                // If hasValidValues is an error, we'll handle it in showTagQuestion
+            } else if (tagApplicable === false) {
+                // Tag is not applicable, skip it
+                continue;
+            }
+            // If tagApplicable is an error, we'll handle it in showTagQuestion
         }
-        
-        // Check if all dependencies are satisfied
-        const dependencies = tagDependencies[tagName] || [];
-        const allDependenciesSatisfied = dependencies.every(dep => 
-            currentTags[dep] !== undefined && currentTags[dep] !== null
-        );
-        
-        if (!allDependenciesSatisfied) {
-            continue; // Skip this tag until dependencies are resolved
-        }
-        
-        // Check if tag is applicable based on req condition
-        if (isTagApplicable(tagName, tagInfo)) {
-            return { name: tagName, info: tagInfo };
-        }
+        return null;
+    } catch (error) {
+        console.error('Error finding next unanswered tag:', error);
+        throw new Error(`Failed to find next tag: ${error.message}`);
     }
-    return null;
 }
 
 function isTagApplicable(tagName, tagInfo) {
-    if (!tagInfo.req) {
-        return true; // No requirements, always applicable
+    try {
+        if (!tagInfo.req) {
+            return true; // No requirements, always applicable
+        }
+        
+        // Parse and evaluate the req condition
+        return evaluateCondition(tagInfo.req);
+    } catch (error) {
+        console.error('Error checking if tag is applicable:', tagName, tagInfo, error);
+        return { error: `Failed to check applicability for tag ${tagName}: ${error.message}` };
     }
-    
-    // Parse and evaluate the req condition
-    return evaluateCondition(tagInfo.req);
 }
 
-function evaluateCondition(condition) {
-    if (!condition) return true;
-    
-    const trimmed = condition.trim();
-    
-    // Handle OR conditions (||)
-    if (trimmed.includes('||')) {
-        const parts = trimmed.split('||').map(p => p.trim());
-        return parts.some(part => evaluateSingleCondition(part));
+function checkTagHasValidValues(tagName, tagInfo) {
+    try {
+        if (tagInfo.values) {
+            // Check if any values have valid conditions
+            for (const valueItem of tagInfo.values) {
+                try {
+                    let condition;
+                    
+                    if (typeof valueItem === 'string') {
+                        // Simple string value (backward compatibility)
+                        condition = null;
+                    } else if (valueItem.value && valueItem.req) {
+                        // Conditional value with 'req' clause
+                        condition = valueItem.req;
+                    } else if (valueItem.value) {
+                        // Value without condition
+                        condition = null;
+                    } else {
+                        // Fallback for other formats
+                        condition = null;
+                    }
+                    
+                    // Check if this value should be shown based on condition
+                    if (condition === null || evaluateCondition(condition)) {
+                        return true; // Found at least one valid value
+                    }
+                } catch (error) {
+                    console.error('Error processing value item:', valueItem, error);
+                    return { error: `Failed to process value for tag ${tagName}: ${error.message}` };
+                }
+            }
+            return false; // No valid values found
+        } else if (tagInfo.type === 'int') {
+            // Integer tag always has valid options
+            return true;
+        } else {
+            // Default to boolean-like options
+            return true;
+        }
+    } catch (error) {
+        console.error('Error checking tag values:', tagName, tagInfo, error);
+        return { error: `Failed to check values for tag ${tagName}: ${error.message}` };
     }
-    
-    // Handle AND conditions (&&)
-    if (trimmed.includes('&&')) {
-        const parts = trimmed.split('&&').map(p => p.trim());
-        return parts.every(part => evaluateSingleCondition(part));
-    }
-    
-    // Single condition
-    return evaluateSingleCondition(trimmed);
-}
-
-function evaluateSingleCondition(condition) {
-    const trimmed = condition.trim();
-    
-    // Handle basic comparisons
-    if (trimmed.includes('>')) {
-        const [variable, value] = trimmed.split('>').map(p => p.trim());
-        const currentValue = parseInt(currentTags[variable]) || 0;
-        return currentValue > parseInt(value);
-    }
-    
-    if (trimmed.includes('<')) {
-        const [variable, value] = trimmed.split('<').map(p => p.trim());
-        const currentValue = parseInt(currentTags[variable]) || 0;
-        return currentValue < parseInt(value);
-    }
-    
-    if (trimmed.includes('>=')) {
-        const [variable, value] = trimmed.split('>=').map(p => p.trim());
-        const currentValue = parseInt(currentTags[variable]) || 0;
-        return currentValue >= parseInt(value);
-    }
-    
-    if (trimmed.includes('<=')) {
-        const [variable, value] = trimmed.split('<=').map(p => p.trim());
-        const currentValue = parseInt(currentTags[variable]) || 0;
-        return currentValue <= parseInt(value);
-    }
-    
-    if (trimmed.includes('==')) {
-        const [variable, value] = trimmed.split('==').map(p => p.trim());
-        const currentValue = currentTags[variable];
-        return currentValue == value;
-    }
-    
-    if (trimmed.includes('!=')) {
-        const [variable, value] = trimmed.split('!=').map(p => p.trim());
-        const currentValue = currentTags[variable];
-        return currentValue != value;
-    }
-    
-    // Handle boolean checks (e.g., "girls" means girls has a truthy value)
-    const currentValue = currentTags[trimmed];
-    return currentValue && currentValue !== '0' && currentValue !== 0;
 }
 
 function showTagQuestion(tag) {
-    document.getElementById('taggingPanel').style.display = 'block';
-    document.getElementById('completionStatus').style.display = 'none';
-    document.getElementById('progressIndicator').style.display = 'block';
-    
-    document.getElementById('currentTagName').textContent = tag.name;
-    document.getElementById('currentTagDescription').textContent = tag.info.desc || tag.info.description || 'No description available';
-    
-    const tagOptionsContainer = document.getElementById('tagOptions');
-    let html = '';
-    
-    if (tag.info.values) {
-        // Handle conditional values with 'req' clauses
-        for (const valueItem of tag.info.values) {
-            let value, condition;
-            
-            if (typeof valueItem === 'string') {
-                // Simple string value (backward compatibility)
-                value = valueItem;
-                condition = null;
-            } else if (valueItem.value && valueItem.req) {
-                // Conditional value with 'req' clause
-                value = valueItem.value;
-                condition = valueItem.req;
-            } else if (valueItem.value) {
-                // Value without condition
-                value = valueItem.value;
-                condition = null;
-            } else {
-                // Fallback for other formats
-                value = valueItem;
-                condition = null;
+    try {
+        document.getElementById('taggingPanel').style.display = 'block';
+        document.getElementById('completionStatus').style.display = 'none';
+        document.getElementById('progressIndicator').style.display = 'block';
+        
+        document.getElementById('currentTagName').textContent = tag.name;
+        document.getElementById('currentTagDescription').textContent = tag.info.desc || tag.info.description || 'No description available';
+        
+        const tagOptionsContainer = document.getElementById('tagOptions');
+        let html = '';
+        let hasValidOptions = false;
+        let hasErrors = false;
+        
+        if (tag.info.values) {
+            // Handle conditional values with 'req' clauses
+            for (const valueItem of tag.info.values) {
+                try {
+                    let value, condition;
+                    
+                    if (typeof valueItem === 'string') {
+                        // Simple string value (backward compatibility)
+                        value = valueItem;
+                        condition = null;
+                    } else if (valueItem.value && valueItem.req) {
+                        // Conditional value with 'req' clause
+                        value = valueItem.value;
+                        condition = valueItem.req;
+                    } else if (valueItem.value) {
+                        // Value without condition
+                        value = valueItem.value;
+                        condition = null;
+                    } else {
+                        // Fallback for other formats
+                        value = valueItem;
+                        condition = null;
+                    }
+                    
+                    // Check if this value should be shown based on condition
+                    if (condition === null || evaluateCondition(condition)) {
+                        html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+                        hasValidOptions = true;
+                    }
+                } catch (error) {
+                    console.error('Error processing value item:', valueItem, error);
+                    html += `<div class="tag-option error" style="background: #ffebee; color: #c62828; border-color: #ef5350;">
+                        <strong>Error:</strong> ${valueItem.value || 'Unknown value'} - ${error.message}
+                    </div>`;
+                    hasErrors = true;
+                }
             }
-            
-            // Check if this value should be shown based on condition
-            if (condition === null || evaluateCondition(condition)) {
+        } else if (tag.info.type === 'int') {
+            // Integer tag - provide common options
+            const options = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            for (const value of options) {
                 html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+                hasValidOptions = true;
             }
+        } else {
+            // Default to boolean-like options
+            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'yes')">Yes</div>`;
+            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'no')">No</div>`;
+            hasValidOptions = true;
         }
-    } else if (tag.info.type === 'int') {
-        // Integer tag - provide common options
-        const options = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        for (const value of options) {
-            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+        
+        if (!hasValidOptions && !hasErrors) {
+            // No valid options and no errors - this means all conditions were parsed but none were met
+            // Don't show this tag at all, it should be skipped
+            return false;
         }
-    } else {
-        // Default to boolean-like options
-        html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'yes')">Yes</div>`;
-        html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'no')">No</div>`;
+        
+        tagOptionsContainer.innerHTML = html;
+        
+        // Show skip button
+        document.getElementById('skipBtn').style.display = 'block';
+        return true;
+    } catch (error) {
+        console.error('Error showing tag question:', tag, error);
+        const tagOptionsContainer = document.getElementById('tagOptions');
+        tagOptionsContainer.innerHTML = `<div class="tag-option error" style="background: #ffebee; color: #c62828; border-color: #ef5350;">
+            <strong>Error displaying tag:</strong> ${tag.name}<br>
+            ${error.message}
+        </div>`;
+        return true; // Show the error
     }
-    
-    tagOptionsContainer.innerHTML = html;
-    
-    // Show skip button
-    document.getElementById('skipBtn').style.display = 'block';
 }
 
 function updateProgress() {
