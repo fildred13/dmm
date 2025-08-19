@@ -82,12 +82,7 @@
         gap: 1rem;
     }
 
-    .tagging-panel h3 {
-        color: #333;
-        margin-bottom: 0.5rem;
-        font-size: 1.2rem;
-        text-align: center;
-    }
+    
 
     .current-tag-info {
         text-align: center;
@@ -144,13 +139,12 @@
         background: #f5f5f5;
     }
 
-    .completion-status {
-        text-align: center;
-        padding: 1rem;
-        background: rgba(102, 126, 234, 0.1);
-        border-radius: 8px;
-        margin-top: auto;
-    }
+         .completion-status {
+         text-align: center;
+         padding: 1rem;
+         background: rgba(102, 126, 234, 0.1);
+         border-radius: 8px;
+     }
 
     .completion-status h4 {
         color: #667eea;
@@ -242,51 +236,59 @@
         padding: 2rem;
     }
 
-    .skip-btn {
-        background: rgba(108, 117, 125, 0.9);
-        border: none;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        color: white;
-        cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        margin-top: 1rem;
-    }
+    
 
-    .skip-btn:hover {
-        background: rgba(108, 117, 125, 1);
-        transform: translateY(-1px);
-    }
-
-    .progress-indicator {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .progress-bar {
-        width: 100%;
-        height: 8px;
-        background: #e0e0e0;
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 0.5rem;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: #667eea;
-        transition: width 0.3s ease;
-    }
-
-    .progress-text {
-        font-size: 0.9rem;
-        color: #666;
-        text-align: center;
-    }
+    
+     
+           .tag-navigation {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          margin-bottom: 1rem;
+      }
+     
+     .nav-btn-small {
+         background: rgba(102, 126, 234, 0.1);
+         border: 2px solid #667eea;
+         border-radius: 8px;
+         padding: 0.5rem 1rem;
+         color: #667eea;
+         cursor: pointer;
+         font-size: 0.9rem;
+         font-weight: 500;
+         transition: all 0.3s ease;
+     }
+     
+     .nav-btn-small:hover {
+         background: #667eea;
+         color: white;
+         transform: translateY(-1px);
+     }
+     
+     .nav-btn-small:disabled {
+         opacity: 0.5;
+         cursor: not-allowed;
+         transform: none;
+     }
+     
+     .next-event-btn {
+         background: #4caf50;
+         border: none;
+         border-radius: 8px;
+         padding: 0.75rem 1.5rem;
+         color: white;
+         cursor: pointer;
+         font-size: 1rem;
+         font-weight: 600;
+         transition: all 0.3s ease;
+         margin-top: 1rem;
+     }
+     
+     .next-event-btn:hover {
+         background: #45a049;
+         transform: translateY(-2px);
+         box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+     }
 </style>
 {% endblock %}
 
@@ -296,44 +298,39 @@
     
     <div class="tag-by-image-layout">
         <div class="tag-sidebar">
-            <div id="mediaInfo" class="media-info" style="display: none;">
-                <div class="media-counter" id="mediaCounter"></div>
-                <div class="media-filename" id="mediaFilename"></div>
-                <div class="media-path" id="mediaPath"></div>
-                <div class="media-dimensions" id="mediaDimensions" style="display: none;">
-                    <span class="dimensions-text">
-                        <span id="mediaWidth">-</span> × <span id="mediaHeight">-</span>
-                    </span>
-                </div>
-            </div>
-            
-            <div class="progress-indicator" id="progressIndicator" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div class="progress-text" id="progressText"></div>
-            </div>
-            
-            <div class="tagging-panel" id="taggingPanel" style="display: none;">
-                <h3>Current Question</h3>
-                <div class="current-tag-info">
-                    <div class="current-tag-name" id="currentTagName"></div>
-                    <div class="current-tag-description" id="currentTagDescription"></div>
-                </div>
-                
-                <div class="tag-options" id="tagOptions">
-                    <!-- Tag options will be populated here -->
-                </div>
-                
-                <button class="skip-btn" id="skipBtn" onclick="skipCurrentTag()" style="display: none;">
-                    Skip This Tag
-                </button>
-            </div>
-            
-            <div class="completion-status" id="completionStatus" style="display: none;">
-                <h4>All Tags Complete!</h4>
-                <p id="completionText"></p>
-            </div>
+                         <div id="mediaInfo" class="media-info" style="display: none;">
+                 <div class="media-counter" id="mediaCounter"></div>
+                 <div class="media-filename" id="mediaFilename"></div>
+                 <div class="media-path" id="mediaPath"></div>
+                 <div class="media-dimensions" id="mediaDimensions" style="display: none;">
+                     <span class="dimensions-text">
+                         <span id="mediaWidth">-</span> × <span id="mediaHeight">-</span>
+                     </span>
+                 </div>
+             </div>
+             
+             <div class="completion-status" id="completionStatus" style="display: none;">
+                 <h4>All Tags Complete!</h4>
+                 <p id="completionText"></p>
+                 <button class="next-event-btn" id="nextEventBtn" onclick="nextEvent()">
+                     Next Event ›
+                 </button>
+             </div>
+             
+             <div class="tagging-panel" id="taggingPanel" style="display: none;">
+                 <div class="tag-navigation" id="tag-navigation" style="display: none;">
+                     <button class="nav-btn-small" id="prevTagBtn" onclick="previousTag()" style="display: none;">‹ Previous</button>
+                 </div>
+                 
+                 <div class="current-tag-info">
+                     <div class="current-tag-name" id="currentTagName"></div>
+                     <div class="current-tag-description" id="currentTagDescription"></div>
+                 </div>
+                 
+                 <div class="tag-options" id="tagOptions">
+                     <!-- Tag options will be populated here -->
+                 </div>
+             </div>
             
             <div class="navigation" id="navigation" style="display: none;">
                 <button class="nav-btn" id="prevBtn" onclick="previousMedia()">‹</button>
@@ -359,6 +356,8 @@ let currentTags = {};
 let allTags = [];
 let currentTagIndex = 0;
 let tagDependencies = {}; // Track dependencies for each tag
+let currentTagPosition = -1; // Current position in the ordered tags array
+let answeredTagPositions = []; // Track positions of answered tags
 
 // Load media list and tag configuration on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -372,8 +371,21 @@ async function loadMediaList() {
         mediaList = await response.json();
         
         if (mediaList.length > 0) {
-            showMedia(0);
-            document.getElementById('navigation').style.display = 'flex';
+            // Find the first media that needs tagging
+            let foundMediaNeedingTagging = false;
+            for (let i = 0; i < mediaList.length; i++) {
+                await loadCurrentTags(mediaList[i].path);
+                if (!isMediaFullyTagged()) {
+                    await showMedia(i);
+                    document.getElementById('navigation').style.display = 'flex';
+                    foundMediaNeedingTagging = true;
+                    break;
+                }
+            }
+            
+            if (!foundMediaNeedingTagging) {
+                showNoMediaNeedsTagging();
+            }
         } else {
             document.getElementById('mediaDisplay').innerHTML = 
                 '<div class="no-media">No media files found. Upload some files first!</div>';
@@ -389,7 +401,7 @@ async function loadTagConfiguration() {
     try {
         const response = await fetch('/api/tags/config');
         tagConfig = await response.json();
-        console.log('Loaded tag configuration:', tagConfig);
+        
         
         // Extract all tags in order from the YAML
         if (tagConfig.tags) {
@@ -462,7 +474,7 @@ function analyzeTagDependencies() {
             }
         }
         
-        console.log('Tag dependencies:', tagDependencies);
+        
     } catch (error) {
         console.error('Error analyzing tag dependencies:', error);
         throw new Error(`Failed to analyze tag dependencies: ${error.message}`);
@@ -627,9 +639,16 @@ function getIdentifierValue(name) {
 }
 
 function compareValues(left, right, op) {
-	// Try numeric compare when both are numeric-like
-	const leftNum = left !== undefined && left !== null && left !== '' && !isNaN(Number(left)) ? Number(left) : null;
-	const rightNum = right !== undefined && right !== null && right !== '' && !isNaN(Number(right)) ? Number(right) : null;
+	// Handle "many" as a special value (treat as 100 for numeric comparisons)
+	const normalizeValue = (val) => {
+		if (val === "many") return 100;
+		if (val !== undefined && val !== null && val !== '' && !isNaN(Number(val))) return Number(val);
+		return null;
+	};
+	
+	const leftNum = normalizeValue(left);
+	const rightNum = normalizeValue(right);
+	
 	if (op === '>' || op === '<' || op === '>=' || op === '<=') {
 		if (leftNum === null || rightNum === null) {
 			throw new Error(`Numeric comparison requires numbers: ${left} ${op} ${right}`);
@@ -697,14 +716,14 @@ function getOrderedTags() {
             resolvedTags.add(tagName);
         } else {
             // Skip this tag for now, it will be processed later when dependencies are resolved
-            console.log(`Skipping ${tagName} - dependencies not resolved: ${dependencies.filter(dep => !resolvedTags.has(dep)).join(', ')}`);
+            
         }
     }
     
     // Check for any unresolved tags (circular dependencies)
     const unresolvedTags = allTags.filter(tag => !resolvedTags.has(tag));
     if (unresolvedTags.length > 0) {
-        console.warn('Circular dependency detected in tags:', unresolvedTags);
+        
         // Add unresolved tags at the end in original order
         orderedTags.push(...unresolvedTags);
     }
@@ -724,6 +743,30 @@ async function showMedia(index) {
     
     currentIndex = index;
     const media = mediaList[index];
+    
+    // Load current tags for this media first
+    await loadCurrentTags(media.path);
+    
+    // Check if this media is fully tagged
+    if (isMediaFullyTagged()) {
+        // Skip to next media
+        if (index < mediaList.length - 1) {
+            await showMedia(index + 1);
+        } else {
+            // We've reached the end, try going backwards
+            for (let i = index - 1; i >= 0; i--) {
+                await loadCurrentTags(mediaList[i].path);
+                if (!isMediaFullyTagged()) {
+                    await showMedia(i);
+                    return;
+                }
+            }
+            // No media needs tagging
+            showNoMediaNeedsTagging();
+            return;
+        }
+        return;
+    }
     
     // Update navigation buttons
     document.getElementById('prevBtn').disabled = index === 0;
@@ -751,9 +794,6 @@ async function showMedia(index) {
         console.warn('Could not load media dimensions:', error);
         document.getElementById('mediaDimensions').style.display = 'none';
     }
-    
-    // Load current tags for this media
-    await loadCurrentTags(media.path);
     
     // Display media
     displayMedia(media);
@@ -820,6 +860,19 @@ async function loadCurrentTags(mediaPath) {
 
 function startTaggingProcess() {
     currentTagIndex = 0;
+    currentTagPosition = -1;
+    answeredTagPositions = [];
+    
+    // Add already answered tags to the positions array
+    const orderedTags = getOrderedTags();
+    for (let i = 0; i < orderedTags.length; i++) {
+        const tagName = orderedTags[i];
+        if (currentTags[tagName] !== undefined && currentTags[tagName] !== null) {
+            answeredTagPositions.push(i);
+        }
+    }
+    
+    
     showNextTag();
 }
 
@@ -827,37 +880,38 @@ function showNextTag() {
     try {
         const nextTag = findNextUnansweredTag();
         
-        if (nextTag) {
-            const shouldShow = showTagQuestion(nextTag);
-            if (shouldShow) {
-                updateProgress();
-            } else {
-                // Tag was shown but has no valid options (all conditions unmet)
-                // Skip to the next tag
-                showNextTag();
-            }
-        } else {
-            showCompletionStatus();
-        }
+                 if (nextTag) {
+             const shouldShow = showTagQuestion(nextTag);
+             if (!shouldShow) {
+                 // Tag was shown but has no valid options (all conditions unmet)
+                 // Skip to the next tag
+                 showNextTag();
+             }
+         } else {
+             showCompletionStatus();
+         }
     } catch (error) {
         console.error('Error showing next tag:', error);
         // Display error in the UI
-        document.getElementById('taggingPanel').style.display = 'block';
-        document.getElementById('completionStatus').style.display = 'none';
-        document.getElementById('progressIndicator').style.display = 'none';
-        
-        document.getElementById('currentTagName').textContent = 'Error';
-        document.getElementById('currentTagDescription').textContent = 'An error occurred while processing tags.';
-        
-        const tagOptionsContainer = document.getElementById('tagOptions');
-        tagOptionsContainer.innerHTML = `<div class="tag-option error" style="background: #ffebee; color: #c62828; border-color: #ef5350;">
-            <strong>System Error:</strong><br>
-            ${error.message}<br><br>
-            <small>Please check the browser console for more details.</small>
-        </div>`;
-        
-        // Hide skip button since we can't proceed
-        document.getElementById('skipBtn').style.display = 'none';
+        const taggingPanel = document.getElementById('taggingPanel');
+        const completionStatus = document.getElementById('completionStatus');
+                 const currentTagName = document.getElementById('currentTagName');
+         const currentTagDescription = document.getElementById('currentTagDescription');
+         const tagOptionsContainer = document.getElementById('tagOptions');
+         
+         if (taggingPanel) taggingPanel.style.display = 'block';
+         if (completionStatus) completionStatus.style.display = 'none';
+         
+         if (currentTagName) currentTagName.textContent = 'Error';
+         if (currentTagDescription) currentTagDescription.textContent = 'An error occurred while processing tags.';
+         
+         if (tagOptionsContainer) {
+             tagOptionsContainer.innerHTML = `<div class="tag-option error" style="background: #ffebee; color: #c62828; border-color: #ef5350;">
+                 <strong>System Error:</strong><br>
+                 ${error.message}<br><br>
+                 <small>Please check the browser console for more details.</small>
+             </div>`;
+         }
     }
 }
 
@@ -865,7 +919,10 @@ function findNextUnansweredTag() {
     try {
         const orderedTags = getOrderedTags();
         
-        for (let i = 0; i < orderedTags.length; i++) {
+        // Start from the position after the current tag
+        const startIndex = currentTagPosition + 1;
+        
+        for (let i = startIndex; i < orderedTags.length; i++) {
             const tagName = orderedTags[i];
             const tagInfo = tagConfig.tags[tagName];
             
@@ -890,6 +947,7 @@ function findNextUnansweredTag() {
                 // Tag is applicable, check if it has any valid values
                 const hasValidValues = checkTagHasValidValues(tagName, tagInfo);
                 if (hasValidValues === true) {
+                    currentTagPosition = i; // Update current position
                     return { name: tagName, info: tagInfo };
                 }
                 // If hasValidValues is false, skip this tag (no valid options)
@@ -966,16 +1024,91 @@ function checkTagHasValidValues(tagName, tagInfo) {
     }
 }
 
+function isMediaFullyTagged() {
+    try {
+        const orderedTags = getOrderedTags();
+        
+        for (const tagName of orderedTags) {
+            const tagInfo = tagConfig.tags[tagName];
+            const dependencies = tagDependencies[tagName] || [];
+            
+            // Check if all dependencies are satisfied
+            const allDependenciesSatisfied = dependencies.every(dep => 
+                currentTags[dep] !== undefined && currentTags[dep] !== null
+            );
+            
+            if (allDependenciesSatisfied) {
+                // Check if tag is applicable
+                const tagApplicable = isTagApplicable(tagName, tagInfo);
+                if (tagApplicable === true) {
+                    // Check if tag has valid values
+                    const hasValidValues = checkTagHasValidValues(tagName, tagInfo);
+                    if (hasValidValues === true) {
+                        // Check if this tag is answered
+                        if (currentTags[tagName] === undefined || currentTags[tagName] === null) {
+                            return false; // Found a tag that needs answering
+                        }
+                    }
+                    // If hasValidValues is false, this tag is skipped (no valid options)
+                    // If hasValidValues is an error, we'll handle it elsewhere
+                } else if (tagApplicable === false) {
+                    // Tag is not applicable, skip it
+                    continue;
+                }
+                // If tagApplicable is an error, we'll handle it elsewhere
+            }
+        }
+        return true; // All applicable tags are answered
+    } catch (error) {
+        console.error('Error checking if media is fully tagged:', error);
+        return false; // Assume not fully tagged if there's an error
+    }
+}
+
+function showNoMediaNeedsTagging() {
+         // Hide all panels
+     const mediaInfo = document.getElementById('mediaInfo');
+     const taggingPanel = document.getElementById('taggingPanel');
+     const completionStatus = document.getElementById('completionStatus');
+     const navigation = document.getElementById('navigation');
+     const mediaDisplay = document.getElementById('mediaDisplay');
+     
+     if (mediaInfo) mediaInfo.style.display = 'none';
+     if (taggingPanel) taggingPanel.style.display = 'none';
+     if (completionStatus) completionStatus.style.display = 'none';
+     if (navigation) navigation.style.display = 'none';
+    
+    // Show message
+    if (mediaDisplay) {
+        mediaDisplay.innerHTML = `
+            <div class="no-media" style="color: #4caf50; background: #e8f5e8; padding: 2rem; border-radius: 8px; border: 1px solid #4caf50;">
+                <h3>🎉 All Media Tagged!</h3>
+                <p>All media files have been fully tagged and no further input is needed.</p>
+                <p><small>You can upload new media files or modify existing tags in the Tag Manager.</small></p>
+            </div>
+        `;
+    }
+}
+
 function showTagQuestion(tag) {
     try {
-        document.getElementById('taggingPanel').style.display = 'block';
-        document.getElementById('completionStatus').style.display = 'none';
-        document.getElementById('progressIndicator').style.display = 'block';
+        const taggingPanel = document.getElementById('taggingPanel');
+        const completionStatus = document.getElementById('completionStatus');
+        const currentTagName = document.getElementById('currentTagName');
+        const currentTagDescription = document.getElementById('currentTagDescription');
         
-        document.getElementById('currentTagName').textContent = tag.name;
-        document.getElementById('currentTagDescription').textContent = tag.info.desc || tag.info.description || 'No description available';
+                 if (taggingPanel) taggingPanel.style.display = 'block';
+        if (completionStatus) completionStatus.style.display = 'none';
+        
+        if (currentTagName) currentTagName.textContent = tag.name;
+        if (currentTagDescription) currentTagDescription.textContent = tag.info.desc || tag.info.description || 'No description available';
         
         const tagOptionsContainer = document.getElementById('tagOptions');
+        if (!tagOptionsContainer) {
+            console.error('Tag options container not found');
+            return false;
+        }
+        
         let html = '';
         let hasValidOptions = false;
         let hasErrors = false;
@@ -1006,7 +1139,9 @@ function showTagQuestion(tag) {
                     
                     // Check if this value should be shown based on condition
                     if (condition === null || evaluateCondition(condition)) {
-                        html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+                        const isSelected = currentTags[tag.name] === value;
+                        const selectedClass = isSelected ? ' selected' : '';
+                        html += `<div class="tag-option${selectedClass}" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
                         hasValidOptions = true;
                     }
                 } catch (error) {
@@ -1021,13 +1156,17 @@ function showTagQuestion(tag) {
             // Integer tag - provide common options
             const options = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             for (const value of options) {
-                html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
+                const isSelected = currentTags[tag.name] === value.toString();
+                const selectedClass = isSelected ? ' selected' : '';
+                html += `<div class="tag-option${selectedClass}" onclick="selectTagValue('${tag.name}', '${value}')">${value}</div>`;
                 hasValidOptions = true;
             }
         } else {
             // Default to boolean-like options
-            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'yes')">Yes</div>`;
-            html += `<div class="tag-option" onclick="selectTagValue('${tag.name}', 'no')">No</div>`;
+            const yesSelected = currentTags[tag.name] === 'yes' ? ' selected' : '';
+            const noSelected = currentTags[tag.name] === 'no' ? ' selected' : '';
+            html += `<div class="tag-option${yesSelected}" onclick="selectTagValue('${tag.name}', 'yes')">Yes</div>`;
+            html += `<div class="tag-option${noSelected}" onclick="selectTagValue('${tag.name}', 'no')">No</div>`;
             hasValidOptions = true;
         }
         
@@ -1039,8 +1178,15 @@ function showTagQuestion(tag) {
         
         tagOptionsContainer.innerHTML = html;
         
-        // Show skip button
-        document.getElementById('skipBtn').style.display = 'block';
+                 // Show navigation buttons
+         const tagNavigation = document.getElementById('tag-navigation');
+         const prevTagBtn = document.getElementById('prevTagBtn');
+         
+         if (tagNavigation) tagNavigation.style.display = 'flex';
+                 // Show previous button if there are any answered tags for this media
+         const hasAnsweredTags = answeredTagPositions.length > 0;
+         if (prevTagBtn) prevTagBtn.style.display = hasAnsweredTags ? 'block' : 'none';
+        
         return true;
     } catch (error) {
         console.error('Error showing tag question:', tag, error);
@@ -1053,81 +1199,28 @@ function showTagQuestion(tag) {
     }
 }
 
-function updateProgress() {
-    const totalApplicableTags = countApplicableTags();
-    const completedTags = countCompletedTags();
-    const progressPercent = totalApplicableTags > 0 ? (completedTags / totalApplicableTags) * 100 : 0;
-    
-    document.getElementById('progressFill').style.width = `${progressPercent}%`;
-    document.getElementById('progressText').textContent = 
-        `${completedTags}/${totalApplicableTags} tags completed`;
-}
 
-function countApplicableTags() {
-    const orderedTags = getOrderedTags();
-    let count = 0;
-    
-    for (const tagName of orderedTags) {
-        const tagInfo = tagConfig.tags[tagName];
-        const dependencies = tagDependencies[tagName] || [];
-        
-        // Check if all dependencies are satisfied
-        const allDependenciesSatisfied = dependencies.every(dep => 
-            currentTags[dep] !== undefined && currentTags[dep] !== null
-        );
-        
-        if (allDependenciesSatisfied && isTagApplicable(tagName, tagInfo)) {
-            count++;
-        }
-    }
-    return count;
-}
-
-function countCompletedTags() {
-    const orderedTags = getOrderedTags();
-    let count = 0;
-    
-    for (const tagName of orderedTags) {
-        const tagInfo = tagConfig.tags[tagName];
-        const dependencies = tagDependencies[tagName] || [];
-        
-        // Check if all dependencies are satisfied
-        const allDependenciesSatisfied = dependencies.every(dep => 
-            currentTags[dep] !== undefined && currentTags[dep] !== null
-        );
-        
-        if (allDependenciesSatisfied && 
-            isTagApplicable(tagName, tagInfo) && 
-            currentTags[tagName] !== undefined && 
-            currentTags[tagName] !== null) {
-            count++;
-        }
-    }
-    return count;
-}
 
 function showCompletionStatus() {
-    document.getElementById('taggingPanel').style.display = 'none';
-    document.getElementById('progressIndicator').style.display = 'none';
-    document.getElementById('completionStatus').style.display = 'block';
+         document.getElementById('taggingPanel').style.display = 'none';
+     document.getElementById('completionStatus').style.display = 'block';
     
-    const totalApplicableTags = countApplicableTags();
-    const completedTags = countCompletedTags();
+         document.getElementById('completionText').textContent = 
+         `All applicable tags completed for this media!`;
     
-    document.getElementById('completionText').textContent = 
-        `All ${completedTags} applicable tags completed for this media!`;
-    
-    // Auto-advance to next image after a short delay
-    setTimeout(() => {
-        if (currentIndex < mediaList.length - 1) {
-            nextMedia();
-        }
-    }, 2000);
+    // Show the "Next Event" button instead of auto-advancing
+    const nextEventBtn = document.getElementById('nextEventBtn');
+    if (nextEventBtn) nextEventBtn.style.display = 'block';
 }
 
 async function selectTagValue(tagName, value) {
     // Save the tag value
     currentTags[tagName] = value;
+    
+    // Add current position to answered positions if not already there
+    if (!answeredTagPositions.includes(currentTagPosition)) {
+        answeredTagPositions.push(currentTagPosition);
+    }
     
     // Save to server
     await saveCurrentTags();
@@ -1136,14 +1229,62 @@ async function selectTagValue(tagName, value) {
     showNextTag();
 }
 
-async function skipCurrentTag() {
-    // Mark current tag as skipped (set to null)
-    const currentTag = findNextUnansweredTag();
-    if (currentTag) {
-        currentTags[currentTag.name] = null;
-        await saveCurrentTags();
-        showNextTag();
+
+
+async function previousTag() {
+    const orderedTags = getOrderedTags();
+    
+    if (answeredTagPositions.length === 0) {
+        return; // No answered tags to navigate to
     }
+    
+    // Find the target position to go back to
+    let targetPosition;
+    
+    // If we're currently at an answered tag, go to the previous one
+    if (answeredTagPositions.includes(currentTagPosition)) {
+        const currentIndex = answeredTagPositions.indexOf(currentTagPosition);
+        if (currentIndex > 0) {
+            // Go to the previous answered tag
+            targetPosition = answeredTagPositions[currentIndex - 1];
+        } else {
+            // We're at the first answered tag, go to the very first tag
+            targetPosition = 0;
+        }
+    } else {
+        // We're not currently at an answered tag, go to the most recent answered tag
+        targetPosition = Math.max(...answeredTagPositions);
+    }
+    
+         // Clear all tags that come after the target position
+     for (let i = targetPosition + 1; i < orderedTags.length; i++) {
+         const tagName = orderedTags[i];
+         if (currentTags[tagName] !== undefined && currentTags[tagName] !== null) {
+             delete currentTags[tagName];
+         }
+     }
+     
+     // Update answeredTagPositions to only include positions up to targetPosition
+     answeredTagPositions = answeredTagPositions.filter(pos => pos <= targetPosition);
+     
+     // Save the cleared tags to the server
+     await saveCurrentTags();
+     
+     // Set current position to target
+     currentTagPosition = targetPosition;
+    
+    // Show the target tag
+    const targetTagName = orderedTags[targetPosition];
+    const targetTagInfo = tagConfig.tags[targetTagName];
+    
+    if (targetTagInfo) {
+        showTagQuestion({ name: targetTagName, info: targetTagInfo });
+    }
+}
+
+async function nextEvent() {
+    // Auto-advance to next media
+    await nextMedia();
 }
 
 async function saveCurrentTags() {
@@ -1171,13 +1312,39 @@ async function saveCurrentTags() {
 
 async function previousMedia() {
     if (currentIndex > 0) {
-        await showMedia(currentIndex - 1);
+        // Find the previous media that needs tagging
+        for (let i = currentIndex - 1; i >= 0; i--) {
+            await loadCurrentTags(mediaList[i].path);
+            if (!isMediaFullyTagged()) {
+                await showMedia(i);
+                return;
+            }
+        }
+        // No previous media needs tagging
+        showNoMediaNeedsTagging();
     }
 }
 
 async function nextMedia() {
     if (currentIndex < mediaList.length - 1) {
-        await showMedia(currentIndex + 1);
+        // Find the next media that needs tagging
+        for (let i = currentIndex + 1; i < mediaList.length; i++) {
+            await loadCurrentTags(mediaList[i].path);
+            if (!isMediaFullyTagged()) {
+                await showMedia(i);
+                return;
+            }
+        }
+        // No next media needs tagging, try going backwards
+        for (let i = currentIndex - 1; i >= 0; i--) {
+            await loadCurrentTags(mediaList[i].path);
+            if (!isMediaFullyTagged()) {
+                await showMedia(i);
+                return;
+            }
+        }
+        // No media needs tagging
+        showNoMediaNeedsTagging();
     }
 }
 
@@ -1194,9 +1361,10 @@ document.addEventListener('keydown', async (e) => {
             e.preventDefault();
             await nextMedia();
             break;
-        case 'Escape':
+        
+        case 'Backspace':
             e.preventDefault();
-            skipCurrentTag();
+            previousTag();
             break;
         case '1':
         case '2':
