@@ -50,19 +50,52 @@ class TagRegistry:
         """Set tags for a specific media file in events_registry.json"""
         registry_data = self.load_registry()
         
+        # Convert tag values to appropriate types based on tag configuration
+        converted_tags = self._convert_tag_types(tags)
+        
         # Find the media entry and update its tags
         for entry in registry_data:
             if entry.get('path') == media_path:
-                entry['tags'] = tags
+                entry['tags'] = converted_tags
                 return self.save_registry(registry_data)
         
         # If media not found, add it with tags
         registry_data.append({
             'path': media_path,
             'original_hash': '',  # Will be set by media processor
-            'tags': tags
+            'tags': converted_tags
         })
         return self.save_registry(registry_data)
+    
+    def _convert_tag_types(self, tags: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert tag values to appropriate types based on tag configuration"""
+        tag_config = self.get_tag_config()
+        converted_tags = {}
+        
+        for tag_name, tag_value in tags.items():
+            if tag_name in tag_config.get('tags', {}):
+                tag_info = tag_config['tags'][tag_name]
+                tag_type = tag_info.get('type', 'string')
+                
+                # Convert value based on type
+                if tag_type == 'int' and tag_value is not None:
+                    try:
+                        # Handle special case where value might be 'many' or other non-numeric
+                        if isinstance(tag_value, str) and tag_value.lower() == 'many':
+                            converted_tags[tag_name] = tag_value
+                        else:
+                            converted_tags[tag_name] = int(tag_value)
+                    except (ValueError, TypeError):
+                        # If conversion fails, keep original value
+                        converted_tags[tag_name] = tag_value
+                else:
+                    # For other types, keep as is
+                    converted_tags[tag_name] = tag_value
+            else:
+                # If tag not in config, keep as is
+                converted_tags[tag_name] = tag_value
+        
+        return converted_tags
     
     def load_registry(self) -> List[Dict[str, Any]]:
         """Load the events registry from JSON file"""

@@ -177,26 +177,97 @@ class TestTagRegistry:
         assert loaded_tags2 == tags2
     
     def test_ensure_tags_field_exists(self, temp_dir):
-        """Test that tags field is automatically added to existing entries"""
+        """Test that tags field is added to entries that don't have it"""
         media_registry_path = os.path.join(temp_dir, "events_registry.json")
         tag_registry = TagRegistry(media_registry_path)
         
         # Create registry data without tags field
-        initial_data = [
-            {
-                'path': 'events/test.jpg',
-                'original_hash': 'hash1'
-            }
+        registry_data = [
+            {'path': 'events/file1.jpg', 'original_hash': 'hash1'},
+            {'path': 'events/file2.jpg', 'original_hash': 'hash2', 'tags': {'existing': 'tag'}}
         ]
         
-        with open(media_registry_path, 'w') as f:
-            json.dump(initial_data, f)
+        # Save the data
+        tag_registry.save_registry(registry_data)
         
-        # Load registry - should add tags field
+        # Load the data back
         loaded_data = tag_registry.load_registry()
-        assert len(loaded_data) == 1
+        
+        # Verify tags field was added
         assert 'tags' in loaded_data[0]
         assert loaded_data[0]['tags'] == {}
+        assert loaded_data[1]['tags'] == {'existing': 'tag'}
+    
+    def test_tag_type_conversion(self, temp_dir):
+        """Test that tag values are converted to appropriate types based on configuration"""
+        media_registry_path = os.path.join(temp_dir, "events_registry.json")
+        tag_registry = TagRegistry(media_registry_path)
+        
+        # Create a test YAML file with type definitions
+        yaml_path = os.path.join(temp_dir, "events_tags.yaml")
+        test_config = {
+            'tags': {
+                'girls': {
+                    'desc': 'Number of girls in the scene.',
+                    'type': 'int',
+                    'values': ['0', '1', '2', '3', 'many']
+                },
+                'guys': {
+                    'desc': 'Number of guys in the scene.',
+                    'type': 'int',
+                    'values': ['0', '1', '2', '3', 'many']
+                },
+                'action': {
+                    'desc': 'High level category of what the main person is doing.',
+                    'values': ['existing', 'dancing', 'climbing']
+                }
+            }
+        }
+        
+        with open(yaml_path, 'w') as f:
+            yaml.dump(test_config, f)
+        
+        # Test setting tags with string values that should be converted to integers
+        tags_with_strings = {
+            'girls': '2',
+            'guys': '1',
+            'action': 'dancing'
+        }
+        
+        success = tag_registry.set_media_tags('events/test.jpg', tags_with_strings)
+        assert success is True
+        
+        # Verify the tags were converted to appropriate types
+        loaded_tags = tag_registry.get_media_tags('events/test.jpg')
+        assert loaded_tags['girls'] == 2  # Should be integer
+        assert loaded_tags['guys'] == 1   # Should be integer
+        assert loaded_tags['action'] == 'dancing'  # Should remain string
+        
+        # Test with 'many' value which should remain string
+        tags_with_many = {
+            'girls': 'many',
+            'guys': '0'
+        }
+        
+        success = tag_registry.set_media_tags('events/test2.jpg', tags_with_many)
+        assert success is True
+        
+        loaded_tags2 = tag_registry.get_media_tags('events/test2.jpg')
+        assert loaded_tags2['girls'] == 'many'  # Should remain string
+        assert loaded_tags2['guys'] == 0        # Should be integer
+        
+        # Test with invalid integer value (should keep original value)
+        tags_with_invalid = {
+            'girls': 'invalid_number',
+            'guys': '3'
+        }
+        
+        success = tag_registry.set_media_tags('events/test3.jpg', tags_with_invalid)
+        assert success is True
+        
+        loaded_tags3 = tag_registry.get_media_tags('events/test3.jpg')
+        assert loaded_tags3['girls'] == 'invalid_number'  # Should keep original
+        assert loaded_tags3['guys'] == 3                  # Should be integer
     
     def test_remove_media_tags(self, temp_dir):
         """Test removing all tags from a media file"""
