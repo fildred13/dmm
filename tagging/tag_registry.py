@@ -117,8 +117,6 @@ class TagRegistry:
                 # If tag not in config, keep as is
                 converted_tags[tag_name] = tag_value
         
-        # Do not apply default values here - they should only be applied when we reach the tag
-        
         return converted_tags
     
     def load_registry(self) -> List[Dict[str, Any]]:
