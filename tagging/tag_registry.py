@@ -9,6 +9,7 @@ import os
 import yaml
 from typing import List, Dict, Any, Optional
 from config import get_tag_registry_path
+from .tag_dependency_manager import TagDependencyManager
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ class TagRegistry:
     def __init__(self, media_registry_path: str):
         self.media_registry_path = media_registry_path
         self.yaml_config_path = os.path.join(os.path.dirname(media_registry_path), 'events_tags.yaml')
+        self.dependency_manager = TagDependencyManager()
     
     def get_tag_registry_path(self) -> str:
         """Get the full path to the media registry file (which now contains tags)"""
@@ -30,7 +32,27 @@ class TagRegistry:
         if os.path.exists(self.yaml_config_path):
             try:
                 with open(self.yaml_config_path, 'r') as f:
-                    return yaml.safe_load(f)
+                    config = yaml.safe_load(f)
+                    
+                    # In Python 3.7+, dict keys preserve insertion order
+                    # The YAML loader should preserve the order from the file
+                    if 'tags' in config:
+                        tag_order = list(config['tags'].keys())
+                        print(f"Tag order from YAML: {tag_order}")
+                        
+                        # Analyze dependencies and get ordered tags
+                        dependencies = self.dependency_manager.analyze_dependencies(config)
+                        ordered_tags = self.dependency_manager.get_ordered_tags(tag_order)
+                        
+                        # Add both to the response
+                        config['tag_order'] = tag_order
+                        config['ordered_tags'] = ordered_tags
+                        config['dependencies'] = dependencies
+                        
+                        print(f"Analyzed dependencies: {dependencies}")
+                        print(f"Final ordered tags: {ordered_tags}")
+                        
+                    return config
             except (yaml.YAMLError, IOError) as e:
                 logger.error(f"Error loading tag configuration from YAML: {e}")
                 return {"tags": {}}
@@ -94,6 +116,8 @@ class TagRegistry:
             else:
                 # If tag not in config, keep as is
                 converted_tags[tag_name] = tag_value
+        
+        # Do not apply default values here - they should only be applied when we reach the tag
         
         return converted_tags
     

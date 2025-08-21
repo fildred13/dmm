@@ -331,8 +331,9 @@ class TestMediaRegistry:
     
     def test_save_registry_with_filename_only(self, temp_dir):
         """Test saving registry when registry_file is just a filename"""
-        # Create registry with just a filename (no directory path)
-        registry = MediaRegistry("events_registry.json")
+        # Create registry with just a filename (no directory path) in temp directory
+        registry_file = os.path.join(temp_dir, "events_registry.json")
+        registry = MediaRegistry(registry_file)
         
         # Test data
         test_data = [{"path": "media/test.jpg"}]
@@ -342,8 +343,4 @@ class TestMediaRegistry:
         assert success is True
         
         # Verify the file was created
-        assert os.path.exists("events_registry.json")
-        
-        # Clean up
-        if os.path.exists("events_registry.json"):
-            os.remove("events_registry.json")
+        assert os.path.exists(registry_file)

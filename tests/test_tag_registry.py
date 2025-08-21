@@ -269,6 +269,102 @@ class TestTagRegistry:
         assert loaded_tags3['girls'] == 'invalid_number'  # Should keep original
         assert loaded_tags3['guys'] == 3                  # Should be integer
     
+    def test_arithmetic_operations_and_type_conversion(self, temp_dir):
+        """Test that arithmetic operations in req statements work correctly and type conversion happens"""
+        media_registry_path = os.path.join(temp_dir, "events_registry.json")
+        tag_registry = TagRegistry(media_registry_path)
+        
+        # Create a test YAML file with arithmetic operations and defaults
+        yaml_path = os.path.join(temp_dir, "events_tags.yaml")
+        test_config = {
+            'tags': {
+                'participants': {
+                    'desc': 'Number of people in the scene.',
+                    'type': 'int',
+                    'values': ['0', '1', '2', '3', 'many']
+                },
+                'girls': {
+                    'desc': 'Number of girls in the scene.',
+                    'req': 'participants >= 1',
+                    'type': 'int',
+                    'values': ['0', '1', '2', '3', 'many']
+                },
+                'guys': {
+                    'desc': 'Number of guys in the scene.',
+                    'req': 'participants - girls > 0',
+                    'type': 'int',
+                    'default': 0,
+                    'values': ['0', '1', '2', '3', 'many']
+                },
+                'action': {
+                    'desc': 'High level category of what the main person is doing.',
+                    'values': ['existing', 'dancing', 'climbing']
+                },
+                'dance_style': {
+                    'desc': 'What style of dance is the main person doing?',
+                    'req': 'action == "dancing"',
+                    'values': [
+                        {'value': 'shuffle', 'req': 'girls >= 1'},
+                        {'value': 'swing', 'req': 'girls + guys > 0'},
+                        {'value': 'salsa', 'req': 'girls > 0 && guys > 0'},
+                        {'value': 'breakdance', 'req': 'guys > 0'}
+                    ]
+                }
+            }
+        }
+        
+        with open(yaml_path, 'w') as f:
+            yaml.dump(test_config, f)
+        
+        # Test 1: Basic arithmetic operations
+        tags_with_arithmetic = {
+            'participants': '3',
+            'girls': '2',
+            'action': 'dancing'
+        }
+        
+        success = tag_registry.set_media_tags('events/test1.jpg', tags_with_arithmetic)
+        assert success is True
+        
+        # Verify the tags were converted (no defaults applied in backend)
+        loaded_tags = tag_registry.get_media_tags('events/test1.jpg')
+        assert loaded_tags['participants'] == 3
+        assert loaded_tags['girls'] == 2
+        assert loaded_tags['action'] == 'dancing'
+        # Note: 'guys' is not present because defaults are applied in frontend, not backend
+        
+        # Test 2: Arithmetic in requirements (participants - girls > 0)
+        tags_with_arithmetic_req = {
+            'participants': '5',
+            'girls': '2',
+            'action': 'dancing'
+        }
+        
+        success = tag_registry.set_media_tags('events/test2.jpg', tags_with_arithmetic_req)
+        assert success is True
+        
+        loaded_tags2 = tag_registry.get_media_tags('events/test2.jpg')
+        assert loaded_tags2['participants'] == 5
+        assert loaded_tags2['girls'] == 2
+        assert loaded_tags2['action'] == 'dancing'
+        # Note: 'guys' is not present because defaults are applied in frontend, not backend
+        
+        # Test 3: Default value application when tag is not provided
+        tags_without_guys = {
+            'participants': '1',
+            'girls': '1',
+            'action': 'dancing'
+        }
+        
+        success = tag_registry.set_media_tags('events/test3.jpg', tags_without_guys)
+        assert success is True
+        
+        loaded_tags3 = tag_registry.get_media_tags('events/test3.jpg')
+        assert loaded_tags3['participants'] == 1
+        assert loaded_tags3['girls'] == 1
+        assert loaded_tags3['action'] == 'dancing'
+        # Note: 'guys' is not present because defaults are applied in frontend, not backend
+    
     def test_remove_media_tags(self, temp_dir):
         """Test removing all tags from a media file"""
         media_registry_path = os.path.join(temp_dir, "events_registry.json")

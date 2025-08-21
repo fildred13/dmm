@@ -405,22 +405,41 @@ async function loadTagConfiguration() {
         
         // Extract all tags in order from the YAML
         if (tagConfig.tags) {
-            allTags = Object.keys(tagConfig.tags);
-            // Analyze dependencies for each tag
-            try {
-                analyzeTagDependencies();
-            } catch (error) {
-                console.error('Error analyzing tag dependencies:', error);
-                // Show error in UI
-                document.getElementById('mediaDisplay').innerHTML = `
-                    <div class="no-media" style="color: #c62828; background: #ffebee; padding: 2rem; border-radius: 8px; border: 1px solid #ef5350;">
-                        <h3>Configuration Error</h3>
-                        <p><strong>Failed to analyze tag dependencies:</strong></p>
-                        <p>${error.message}</p>
-                        <p><small>Please check your events_tags.yaml file for syntax errors.</small></p>
-                    </div>
-                `;
-                return;
+            // Use the ordered_tags field from the backend (dependency-resolved order)
+            if (tagConfig.ordered_tags) {
+                allTags = tagConfig.ordered_tags;
+                console.log('Tags received from backend (using ordered_tags):', allTags);
+            } else if (tagConfig.tag_order) {
+                // Fallback to tag_order if ordered_tags is not available
+                allTags = tagConfig.tag_order;
+                console.log('Tags received from backend (using tag_order):', allTags);
+            } else {
+                // Fallback to Object.keys if neither is available
+                allTags = Object.keys(tagConfig.tags);
+                console.log('Tags received from backend (fallback):', allTags);
+            }
+            
+            // Use dependencies from backend if available
+            if (tagConfig.dependencies) {
+                tagDependencies = tagConfig.dependencies;
+                console.log('Dependencies received from backend:', tagDependencies);
+            } else {
+                // Fallback to frontend dependency analysis
+                try {
+                    analyzeTagDependencies();
+                } catch (error) {
+                    console.error('Error analyzing tag dependencies:', error);
+                    // Show error in UI
+                    document.getElementById('mediaDisplay').innerHTML = `
+                        <div class="no-media" style="color: #c62828; background: #ffebee; padding: 2rem; border-radius: 8px; border: 1px solid #ef5350;">
+                            <h3>Configuration Error</h3>
+                            <p><strong>Failed to analyze tag dependencies:</strong></p>
+                            <p>${error.message}</p>
+                            <p><small>Please check your events_tags.yaml file for syntax errors.</small></p>
+                        </div>
+                    `;
+                    return;
+                }
             }
         }
     } catch (error) {
@@ -502,7 +521,7 @@ function tokenizeCondition(input) {
 			}
 		}
 		// Single char operators / parens
-		if (char === '>' || char === '<' || char === '(' || char === ')') {
+		if (char === '>' || char === '<' || char === '(' || char === ')' || char === '+' || char === '-') {
 			tokens.push({ type: char === '(' || char === ')' ? (char === '(' ? 'lparen' : 'rparen') : 'op', value: char });
 			i++;
 			continue;
@@ -611,26 +630,92 @@ function parsePrimary(state) {
 }
 
 function parseComparisonOrIdentifier(state) {
-	const identToken = expectType(state, 'identifier', 'Expected identifier');
-	const leftValRaw = getIdentifierValue(identToken.value);
+	const left = parseArithmeticExpression(state);
 	// Look ahead for comparator
 	const op = peekOp(state);
 	if (op && (op === '==' || op === '!=' || op === '>=' || op === '<=' || op === '>' || op === '<')) {
 		state.index++; // consume op
-		const right = parseValue(state);
-		return compareValues(leftValRaw, right, op);
+		const right = parseArithmeticExpression(state);
+		return compareValues(left, right, op);
 	}
 	// Truthiness of identifier when no comparator
-	return isTruthy(leftValRaw);
+	return isTruthy(left);
 }
 
-function parseValue(state) {
+function parseArithmeticExpression(state) {
+	let value = parseArithmeticTerm(state);
+	while (true) {
+		const op = peekOp(state);
+		if (op === '+' || op === '-') {
+			state.index++; // consume op
+			const rhs = parseArithmeticTerm(state);
+			if (op === '+') {
+				value = addValues(value, rhs);
+			} else {
+				value = subtractValues(value, rhs);
+			}
+		} else {
+			break;
+		}
+	}
+	return value;
+}
+
+function parseArithmeticTerm(state) {
 	const tok = current(state);
 	if (!tok) throw new Error('Expected value');
-	if (tok.type === 'number') { state.index++; return tok.value; }
-	if (tok.type === 'string') { state.index++; return tok.value; }
-	if (tok.type === 'identifier') { state.index++; return getIdentifierValue(tok.value); }
+	if (tok.type === 'number') { 
+		state.index++; 
+		return tok.value; 
+	}
+	if (tok.type === 'string') { 
+		state.index++; 
+		return tok.value; 
+	}
+	if (tok.type === 'identifier') { 
+		state.index++; 
+		return getIdentifierValue(tok.value); 
+	}
 	throw new Error('Expected a value (number, string, or identifier)');
+}
+
+function addValues(left, right) {
+	// Handle "many" as a special value
+	if (left === "many" || right === "many") return "many";
+	
+	// Convert to numbers if possible
+	const leftNum = normalizeValue(left);
+	const rightNum = normalizeValue(right);
+	
+	if (leftNum !== null && rightNum !== null) {
+		return leftNum + rightNum;
+	}
+	
+	// If either is not numeric, return the left value
+	return left;
+}
+
+function subtractValues(left, right) {
+	// Handle "many" as a special value
+	if (left === "many") return "many";
+	if (right === "many") return 0; // many - many = 0
+	
+	// Convert to numbers if possible
+	const leftNum = normalizeValue(left);
+	const rightNum = normalizeValue(right);
+	
+	if (leftNum !== null && rightNum !== null) {
+		return Math.max(0, leftNum - rightNum); // Don't allow negative values
+	}
+	
+	// If either is not numeric, return the left value
+	return left;
+}
+
+function normalizeValue(val) {
+	if (val === "many") return 100;
+	if (val !== undefined && val !== null && val !== '' && !isNaN(Number(val))) return Number(val);
+	return null;
 }
 
 function getIdentifierValue(name) {
@@ -640,12 +725,6 @@ function getIdentifierValue(name) {
 
 function compareValues(left, right, op) {
 	// Handle "many" as a special value (treat as 100 for numeric comparisons)
-	const normalizeValue = (val) => {
-		if (val === "many") return 100;
-		if (val !== undefined && val !== null && val !== '' && !isNaN(Number(val))) return Number(val);
-		return null;
-	};
-	
 	const leftNum = normalizeValue(left);
 	const rightNum = normalizeValue(right);
 	
@@ -703,32 +782,8 @@ function peekOp(state) {
 }
 
 function getOrderedTags() {
-    const orderedTags = [];
-    const resolvedTags = new Set();
-    
-    // Process tags in their original order
-    for (const tagName of allTags) {
-        const dependencies = tagDependencies[tagName] || [];
-        const allDependenciesResolved = dependencies.every(dep => resolvedTags.has(dep));
-        
-        if (allDependenciesResolved) {
-            orderedTags.push(tagName);
-            resolvedTags.add(tagName);
-        } else {
-            // Skip this tag for now, it will be processed later when dependencies are resolved
-            
-        }
-    }
-    
-    // Check for any unresolved tags (circular dependencies)
-    const unresolvedTags = allTags.filter(tag => !resolvedTags.has(tag));
-    if (unresolvedTags.length > 0) {
-        
-        // Add unresolved tags at the end in original order
-        orderedTags.push(...unresolvedTags);
-    }
-    
-    return orderedTags;
+    // Use the backend-provided ordered tags
+    return allTags;
 }
 
 async function showMedia(index) {
@@ -799,7 +854,7 @@ async function showMedia(index) {
     displayMedia(media);
     
     // Start the tagging process
-    startTaggingProcess();
+    await startTaggingProcess();
 }
 
 function displayMedia(media) {
@@ -858,38 +913,50 @@ async function loadCurrentTags(mediaPath) {
     }
 }
 
-function startTaggingProcess() {
+async function startTaggingProcess() {
     currentTagIndex = 0;
     currentTagPosition = -1;
     answeredTagPositions = [];
     
-    // Add already answered tags to the positions array
+    // Process all tags to apply defaults where needed
     const orderedTags = getOrderedTags();
     for (let i = 0; i < orderedTags.length; i++) {
         const tagName = orderedTags[i];
+        const tagInfo = tagConfig.tags[tagName];
+        
+        // If tag is already answered, add to answered positions
         if (currentTags[tagName] !== undefined && currentTags[tagName] !== null) {
             answeredTagPositions.push(i);
+            continue;
         }
+        
+        // Check if all dependencies are satisfied
+        const dependencies = tagDependencies[tagName] || [];
+        const allDependenciesSatisfied = dependencies.every(dep => 
+            currentTags[dep] !== undefined && currentTags[dep] !== null
+        );
+        
+        // Do not apply defaults here - they should only be applied when we reach the tag
+        // in the normal tagging flow
     }
     
-    
-    showNextTag();
+    await showNextTag();
 }
 
-function showNextTag() {
+async function showNextTag() {
     try {
-        const nextTag = findNextUnansweredTag();
+        const nextTag = await findNextUnansweredTag();
         
-                 if (nextTag) {
-             const shouldShow = showTagQuestion(nextTag);
-             if (!shouldShow) {
-                 // Tag was shown but has no valid options (all conditions unmet)
-                 // Skip to the next tag
-                 showNextTag();
-             }
-         } else {
-             showCompletionStatus();
-         }
+                         if (nextTag) {
+            const shouldShow = await showTagQuestion(nextTag);
+            if (!shouldShow) {
+                // Tag was shown but has no valid options (all conditions unmet)
+                // Skip to the next tag
+                await showNextTag();
+            }
+        } else {
+            showCompletionStatus();
+        }
     } catch (error) {
         console.error('Error showing next tag:', error);
         // Display error in the UI
@@ -915,9 +982,10 @@ function showNextTag() {
     }
 }
 
-function findNextUnansweredTag() {
+async function findNextUnansweredTag() {
     try {
         const orderedTags = getOrderedTags();
+        // Find next unanswered tag
         
         // Start from the position after the current tag
         const startIndex = currentTagPosition + 1;
@@ -949,11 +1017,33 @@ function findNextUnansweredTag() {
                 if (hasValidValues === true) {
                     currentTagPosition = i; // Update current position
                     return { name: tagName, info: tagInfo };
+                } else if (hasValidValues === false) {
+                    // Tag would be presented but has no valid values
+                    // Apply default if available
+                    if (tagInfo.default !== undefined) {
+                        currentTags[tagName] = tagInfo.default;
+                        if (!answeredTagPositions.includes(i)) {
+                            answeredTagPositions.push(i);
+                        }
+                        // Save the changes immediately
+                        await saveCurrentTags();
+                        console.log(`Applied default value ${tagInfo.default} to tag ${tagName}`);
+                    }
+                    continue;
                 }
-                // If hasValidValues is false, skip this tag (no valid options)
                 // If hasValidValues is an error, we'll handle it in showTagQuestion
             } else if (tagApplicable === false) {
-                // Tag is not applicable, skip it
+                // Tag requirements not met
+                // Apply default if available
+                if (tagInfo.default !== undefined) {
+                    currentTags[tagName] = tagInfo.default;
+                    if (!answeredTagPositions.includes(i)) {
+                        answeredTagPositions.push(i);
+                    }
+                    // Save the changes immediately
+                    await saveCurrentTags();
+                    console.log(`Applied default value ${tagInfo.default} to tag ${tagName} (requirements not met)`);
+                }
                 continue;
             }
             // If tagApplicable is an error, we'll handle it in showTagQuestion
@@ -1028,7 +1118,15 @@ function isMediaFullyTagged() {
     try {
         const orderedTags = getOrderedTags();
         
+        // Simple approach: check if all tags that have values are answered
         for (const tagName of orderedTags) {
+            // Only check tags that have been explicitly set by the user
+            if (currentTags[tagName] !== undefined && currentTags[tagName] !== null) {
+                // This tag has been answered, continue
+                continue;
+            }
+            
+            // For tags that haven't been answered, check if they should be presented
             const tagInfo = tagConfig.tags[tagName];
             const dependencies = tagDependencies[tagName] || [];
             
@@ -1038,27 +1136,18 @@ function isMediaFullyTagged() {
             );
             
             if (allDependenciesSatisfied) {
-                // Check if tag is applicable
+                // Check if tag is applicable and has valid values
                 const tagApplicable = isTagApplicable(tagName, tagInfo);
                 if (tagApplicable === true) {
-                    // Check if tag has valid values
                     const hasValidValues = checkTagHasValidValues(tagName, tagInfo);
                     if (hasValidValues === true) {
-                        // Check if this tag is answered
-                        if (currentTags[tagName] === undefined || currentTags[tagName] === null) {
-                            return false; // Found a tag that needs answering
-                        }
+                        // This tag should be presented but hasn't been answered
+                        return false;
                     }
-                    // If hasValidValues is false, this tag is skipped (no valid options)
-                    // If hasValidValues is an error, we'll handle it elsewhere
-                } else if (tagApplicable === false) {
-                    // Tag is not applicable, skip it
-                    continue;
                 }
-                // If tagApplicable is an error, we'll handle it elsewhere
             }
         }
-        return true; // All applicable tags are answered
+        return true; // All tags that should be answered have been answered
     } catch (error) {
         console.error('Error checking if media is fully tagged:', error);
         return false; // Assume not fully tagged if there's an error
@@ -1090,7 +1179,7 @@ function showNoMediaNeedsTagging() {
     }
 }
 
-function showTagQuestion(tag) {
+async function showTagQuestion(tag) {
     try {
         const taggingPanel = document.getElementById('taggingPanel');
         const completionStatus = document.getElementById('completionStatus');
@@ -1172,7 +1261,7 @@ function showTagQuestion(tag) {
         
         if (!hasValidOptions && !hasErrors) {
             // No valid options and no errors - this means all conditions were parsed but none were met
-            // Don't show this tag at all, it should be skipped
+            // Don't apply defaults here - just skip this tag
             return false;
         }
         
@@ -1215,6 +1304,7 @@ function showCompletionStatus() {
 
 async function selectTagValue(tagName, value) {
     // Save the tag value
+    // Save the tag value
     currentTags[tagName] = value;
     
     // Add current position to answered positions if not already there
@@ -1226,7 +1316,7 @@ async function selectTagValue(tagName, value) {
     await saveCurrentTags();
     
     // Show next tag or completion
-    showNextTag();
+    await showNextTag();
 }
 
 
@@ -1278,7 +1368,7 @@ async function previousTag() {
     const targetTagInfo = tagConfig.tags[targetTagName];
     
     if (targetTagInfo) {
-        showTagQuestion({ name: targetTagName, info: targetTagInfo });
+        await showTagQuestion({ name: targetTagName, info: targetTagInfo });
     }
 }
 
@@ -1378,7 +1468,7 @@ document.addEventListener('keydown', async (e) => {
         case '0':
             e.preventDefault();
             // Quick number selection for current tag
-            const currentTag = findNextUnansweredTag();
+            const currentTag = await findNextUnansweredTag();
             if (currentTag && currentTag.info.values) {
                 // Get available values (filtered by conditions)
                 const availableValues = [];
